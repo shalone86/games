@@ -6,6 +6,7 @@ Shalone Cason's PICO-8 games and learning carts.
 |---|---|
 | [`cookbook/`](cookbook/COOKBOOK.md) | **PICO-8 Cookbook**: 19 small playable recipes (moving, collisions, jumping, aiming, camera, juice, sound, saving, number traps…) and a guide for learning and teaching them |
 | [`kaiju/`](kaiju/WORKSHOP.md) | **Kaiju Workshop**: one monster game played six ways, three with attack buttons and three without, to find the most fun one |
+| [`kaiju/rage.p8`](kaiju/RAGE.md) | **Kaiju Rage** (working title): the real game. Breath, dash/leap, Z+X grab and throw, per-kaiju skill orbs, a rage meter, a rival kaiju, big enemies and mechs |
 | `tools/` | helpers: stand-in art, token count, headless test runs, screenshots |
 
 Blessed! and Candles! still live in the sdcourses repo (`game/`).
@@ -57,5 +58,6 @@ error. A driver script can call `shot("name")` to save a screenshot into the
 cart's `shots/` folder, and `tools/contact_sheet.py` joins them into one
 picture.
 
+![kaiju rage](kaiju/shots/rage_sheet.png)
 ![kaiju workshop](kaiju/shots/sheet.png)
 ![cookbook](cookbook/shots/sheet.png)

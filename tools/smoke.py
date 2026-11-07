@@ -28,7 +28,9 @@ __saves={}
 function dset(i,v) __saves[i]=v end
 function dget(i) return __saves[i] or 0 end
 function btn(b) return __held[b] or false end
-function btnp(b) return (__held[b] and __f%10==0) or false end
+__prev={}
+-- true only on the frame the button goes down
+function btnp(b) return (__held[b] and not __prev[b]) or false end
 function shot(name)
  printh("shot:"..name)
  for y=0,127 do
@@ -38,7 +40,10 @@ function shot(name)
  end
 end
 function frames(n)
- for i=1,n do __f+=1 _update() _draw() end
+ for i=1,n do
+  __f+=1 _update() _draw()
+  __prev={} for b,v in pairs(__held) do __prev[b]=v end
+ end
 end
 """
 

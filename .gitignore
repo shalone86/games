@@ -3,4 +3,4 @@ __pycache__/
 *.p8.png
 # screenshots are regenerated; only the contact sheets are kept
 */shots/*.png
-!*/shots/sheet.png
+!*/shots/*sheet.png

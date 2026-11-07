@@ -1,5 +1,7 @@
 # Kaiju Workshop
 
+> The modes picked from here became **Kaiju Rage**: see [RAGE.md](RAGE.md).
+
 One monster, one city, one army, **six ways to play**. `kaiju.p8` is a
 sketchbook for finding out which kind of kaiju game is the most fun before
 building the real one. Three modes use attack buttons, three use none
