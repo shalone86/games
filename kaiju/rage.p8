@@ -65,7 +65,7 @@ function start()
   sl={pk.sk[1]},lv={1,0},tm={0,0}}
  ens,shots,fx,pops,drops,objs,clouds,bolts={},{},{},{},{},{},{},{}
  score,tm,secs,shake,stop,bt,flash=0,0,0,0,0,0,0
- spawn_t,wave,rt,rival,nr,fin,dm=60,1,1200,nil,0,0,1
+ spawn_t,wave,rt,rival,nr,fin,dm=60,1,750,nil,0,0,1
  cx,cy=k.x-64,k.y-64
  st="play"
  music(0,0,3)
@@ -74,7 +74,7 @@ end
 function over(w)
  st,ot,won="over",0,w
  music(-1) sfx(w and 9 or 2)
- if w then score=min(score+1000,32000)
+ if w then score=min(score+100,32000)
  else boom(k.x,k.y-8,40) end
  best=dget(sel)
  if score>best then dset(sel,score) end
@@ -85,25 +85,14 @@ end
 -- z+x together: grab
 -- holding something: any
 --  button throws it
--- on a new skill orb:
---  z/x swaps it into slot 1/2
 function buttons()
  local z,x,pz=btn(4),btn(5),k.zt
  if not (z or x) then k.lock=false end
  k.zt=z and k.zt+1 or 0
  k.xt=x and k.xt+1 or 0
  if k.lock then k.bl=0 return end
- if k.held or k.pend then
-  if btnp(4) or btnp(5) then
-   if k.held then throw()
-   else
-    local i=btnp(4) and 1 or 2
-    k.sl[i],k.lv[i],k.tm[i]=k.pend.o,1,0
-    banner(sk[k.pend.o].n.." in slot "..i)
-    del(drops,k.pend) sfx(9)
-   end
-   k.lock=true
-  end
+ if k.held then
+  if btnp(4) or btnp(5) then throw() k.lock=true end
   return
  end
  -- both pressed within 5
@@ -340,7 +329,7 @@ function smash(b)
  boom(b.x+8,b.y+8,b.k*4+3)
  shake=max(shake,b.k)
  sfx(b.k<2 and 10 or 2)
- if b.k>0 then drop(b.x+8,b.y+8,b.k>1 and .1 or .02) end
+ if b.k>0 then drop(b.x+8,b.y+8,b.k>1 and .2 or .06) end
 end
 
 -- hurt every building and
@@ -375,8 +364,11 @@ function upd_play()
  tm+=1
  if tm==30 then
   tm,secs=0,secs+1
-  if secs%40==0 and wave<8 then
+  -- a new wave every 25 s
+  if secs%25==0 and wave<8 then
    wave+=1
+   -- and a skill orb near you
+   add(drops,{x=k.x+rnd(48)-24,y=k.y+rnd(48)-24,o=orb()})
    if wave==8 then
     fin=3
     for i=1,3 do spawn(5) end
@@ -603,10 +595,10 @@ function upd_army()
  -- squads: tanks and helis
  -- come in groups that grow
  -- with the waves
- if spawn_t<=0 and #ens<8+wave*5 then
+ if spawn_t<=0 and #ens<10+wave*6 then
   local kd,a=pick(),rnd()
   for i=1,kd<3 and 1+rnd(wave/2+1) or 1 do spawn(kd,a) end
-  spawn_t=max(8,60-wave*7)
+  spawn_t=max(6,50-wave*7)
  end
  if not rival then
   rt-=1
@@ -639,7 +631,7 @@ function upd_army()
     else
      -- mechs fire 3 missiles
      local n=kd==5 and 3 or 1
-     e.cd=kd==5 and 150 or 110+rnd(40)
+     e.cd=kd==5 and 150-wave*8 or max(40,110-wave*9)+rnd(40)
      for i=1,n do
       local b=a+(i-(n+1)/2)*.06
       add(shots,{x=e.x,y=e.y,dx=cos(b),dy=sin(b),t=100,s=(kd==2 or kd==5) and 36 or 35,d=e.df})
@@ -714,10 +706,10 @@ function kill(e)
  addscore(et[e.k][6],e.x,e.y)
  sfx(2)
  for i=1,e.k>4 and 6 or 1 do
-  drop(e.x+rnd(16)-8,e.y+rnd(16)-8,e.w>1 and .35 or .03)
+  drop(e.x+rnd(16)-8,e.y+rnd(16)-8,e.w>1 and .6 or .08)
  end
  if e.k==6 then
-  rival,rt=nil,900
+  rival,rt=nil,600
   add(drops,{x=e.x,y=e.y,o=orb()})
   banner("rival beaten!")
  end
@@ -734,36 +726,46 @@ end
 -- hearts, sometimes an orb
 function drop(x,y,po)
  local r=rnd()
- if r<.5 then add(drops,{x=x,y=y,s=41})
- elseif r<.56 then add(drops,{x=x,y=y,s=40}) end
+ if r<.3 then add(drops,{x=x,y=y,s=41})
+ elseif r<.36 then add(drops,{x=x,y=y,s=40}) end
  if rnd()<po then add(drops,{x=x,y=y+3,o=orb()}) end
 end
 
 function pickups()
- k.pend=nil
  for d in all(drops) do
   if abs(d.x-k.x)<8 and abs(d.y-k.y+4)<8 then
    if d.o then
+    -- touch it, you take it
+    -- (dodge the ones you
+    -- don't want)
+    del(drops,d) sfx(9)
     local i=has(d.o)
     if i then
      -- same skill: level up
-     del(drops,d) sfx(9)
      k.lv[i]=min(k.lv[i]+1,3)
      banner(sk[d.o].n.." level "..k.lv[i])
-    elseif not k.sl[2] then
-     del(drops,d) sfx(9)
-     k.sl[2],k.lv[2]=d.o,1
-     banner(sk[d.o].n.."!")
     else
-     -- both slots full: ask
-     k.pend=d
+     -- both full: it pushes out
+     -- the weaker skill (the
+     -- older one if they tie).
+     -- slot 2 is always newest
+     if k.sl[2] then
+      local o=k.lv[1]<=k.lv[2] and 1 or 2
+      banner(sk[d.o].n.." for "..sk[k.sl[o]].n)
+      if o==1 then
+       k.sl[1],k.lv[1],k.tm[1]=k.sl[2],k.lv[2],k.tm[2]
+      end
+     else
+      banner(sk[d.o].n.."!")
+     end
+     k.sl[2],k.lv[2],k.tm[2]=d.o,1,0
     end
    else
     del(drops,d) sfx(3)
     if d.s==40 then k.hp=min(k.hp+2,k.mhp)
     else
      k.rage+=1
-     if k.rage>=20 then rampage() end
+     if k.rage>=36 then rampage() end
     end
    end
   end
@@ -817,11 +819,16 @@ end
 
 function addscore(n,x,y)
  n*=dm
- score=min(score+n,32000)
+ -- score is kept in tens
+ -- (shown with a 0 on the end)
+ -- so it can pass 32767
+ score=min(score+n/10,32000)
  if n>=10 then add(pops,{x=x,y=y,t=30,s="+"..n}) end
 end
 
 function banner(s) bn,bt=s,60 end
+
+function pts(s) return s<1 and "0" or flr(s).."0" end
 
 -->8
 -- drawing + hud
@@ -1023,7 +1030,7 @@ function drw_hud()
  for i=1,k.mhp do
   rectfill(i*4-3,1,i*4-1,5,i<=k.hp+.99 and 8 or 2)
  end
- print(score,56,1,7)
+ print(pts(score),56,1,7)
  print("w"..wave,88,1,9)
  local s=secs
  print(s\60 ..":"..(s%60<10 and "0" or "")..s%60,108,1,6)
@@ -1056,7 +1063,7 @@ function drw_hud()
  -- rage meter
  print("rage",80,121,8)
  rect(97,121,115,125,5)
- rectfill(98,122,98+16*(k.rg>0 and k.rg/300 or k.rage/20),124,k.rg>0 and 8+t()*15%7 or 8)
+ rectfill(98,122,98+16*(k.rg>0 and k.rg/300 or k.rage/36),124,k.rg>0 and 8+t()*15%7 or 8)
  if k.rg>210 then
   oprint("\^w\^trage mode!",24,40+sin(t()*2)*3,8+t()*15%7)
  end
@@ -1064,11 +1071,6 @@ function drw_hud()
  local rdy=k.dcd==0 and k.jcd==0
  print("z",121,121,rdy and 11 or 5)
 
- if k.pend then
-  local s=sk[k.pend.o]
-  rectfill(0,111,127,118,0)
-  print("new "..s.n.."! z:slot 1 x:slot 2",2,112,t()*4%2<1 and s.c or 7)
- end
  if k.held then print("throw: z or x",38,112,10) end
  if bt>0 then
   bt-=1 oprint(bn,64-#bn*2,30,10)
@@ -1080,8 +1082,8 @@ function drw_over()
  rect(20,40,107,84,won and 11 or 8)
  local m=won and "city conquered!" or "rampage over"
  oprint(m,64-#m*2,44,won and 11 or 8)
- print("score "..score,36,54,7)
- print("best  "..max(best,score),36,62,6)
+ print("score "..pts(score),36,54,7)
+ print("best  "..pts(max(best,score)),36,62,6)
  if score>best then print("new best!",46,70,10) end
  if ot>45 then print("z: menu",50,77,6) end
 end
@@ -1110,7 +1112,7 @@ function drw_title()
   circfill(x+2,y+2,2,s.c)
   print(s.n,x+7,y,s.c)
  end
- print("best "..dget(sel),4,102,6)
+ print("best "..pts(dget(sel)),4,102,6)
  print("\139\145 choose  z: go",56,102,6)
 end
 __gfx__

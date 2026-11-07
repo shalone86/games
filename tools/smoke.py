@@ -102,4 +102,5 @@ def main(cart, driver, wait=60):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    # optional 3rd argument: seconds to wait (default 60)
+    main(sys.argv[1], sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 60)

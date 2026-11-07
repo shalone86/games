@@ -20,12 +20,12 @@ for c=1,#roster do
  -- orbs: a second skill, then a swap prompt
  press() frames(15)
  add(drops,{x=k.x,y=k.y,o=roster[c].sk[3]}) frames(2)
+ add(drops,{x=k.x,y=k.y,o=roster[c].sk[1]}) frames(2)
+ printh("  slots "..sk[k.sl[1]].n..k.lv[1].."/"..sk[k.sl[2]].n..k.lv[2])
  add(drops,{x=k.x,y=k.y,o=roster[c].sk[4]}) frames(2)
- printh("  slots "..sk[k.sl[1]].n.."/"..sk[k.sl[2]].n.." pending="..tostr(k.pend!=nil))
- press(4) frames(1) press() frames(2)
- printh("  after z swap: "..sk[k.sl[1]].n.."/"..sk[k.sl[2]].n)
+ printh("  new orb pushes out the weaker: "..sk[k.sl[1]].n..k.lv[1].."/"..sk[k.sl[2]].n..k.lv[2])
  -- rage meter
- k.rage=19 add(drops,{x=k.x,y=k.y,s=41}) frames(2)
+ k.rage=35 add(drops,{x=k.x,y=k.y,s=41}) frames(2)
  printh("  rampage frames="..k.rg)
  -- every skill at level 3 for a while
  for j=1,5,2 do
@@ -39,11 +39,11 @@ for c=1,#roster do
  for i=1,40 do press(1,5) frames(5) if st!="play" then break end end
  printh("  rival hp="..(rival and rival.hp or "beaten").." run="..tostr(rival and rival.run))
  -- late waves + final
- k.hp=99 k.mhp=99 wave=5 secs=239 tm=29 frames(2) printh("  wave "..wave)
+ k.hp=99 k.mhp=99 wave=5 secs=249 tm=29 frames(2) printh("  wave "..wave)
  for i=1,30 do press(i%4,5) k.inv=99 frames(10) end
  local n={0,0,0,0,0,0} for e in all(ens) do n[e.k]+=1 end
  printh("  enemies by kind: "..n[1].." "..n[2].." "..n[3].." "..n[4].." "..n[5].." "..n[6])
- wave=7 secs=279 tm=29 frames(2) printh("  wave "..wave.." fin="..fin)
+ wave=7 secs=274 tm=29 frames(2) printh("  wave "..wave.." fin="..fin)
  for e in all(ens) do if e.k==5 then e.hp=.1 hit(e.x,e.y,4,1,true) end end
  printh("  state "..st.." won="..tostr(won).." score="..score)
  press(4) frames(60) press() frames(5)

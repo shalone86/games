@@ -86,7 +86,7 @@ nearest enemy).
 
 ## Rage mode
 
-Half of what you smash drops a **coin**. 20 coins fill the **rage** meter,
+About a third of what you smash drops a **coin**. 36 coins fill the **rage** meter (about 1–2 times a game),
 and it goes off by itself (think Mario's star, or Super Sonic):
 
 - A white flash, a freeze, three shockwaves and a giant wobbling
@@ -101,7 +101,7 @@ and it goes off by itself (think Mario's star, or Super Sonic):
 
 ## The rival kaiju
 
-At 40 seconds another kaiju (one you didn't pick, tinted purple) arrives.
+At 25 seconds another kaiju (one you didn't pick, tinted purple) arrives.
 
 - It **hunts** you: up close it hits for 2; from a distance it breathes a
   burst of fire at you. It tramples houses as it goes.
@@ -109,12 +109,12 @@ At 40 seconds another kaiju (one you didn't pick, tinted purple) arrives.
   bar turns blue while it's fleeing.
 - Off screen, an **arrow on the edge** points to it: red **!** = hunting,
   blue **+** = running and healing.
-- Beat it: 500 points, a pile of coins, and a skill orb. 30 s later a new one
+- Beat it: 500 points, a pile of coins, and a skill orb. 20 s later a new one
   comes, 10 hp stronger each time.
 
 ## Waves
 
-A new wave every 40 seconds; 8 waves in all.
+A new wave every 25 seconds (each one also drops a skill orb near you); 8 waves, so the final wave comes at about 3 minutes.
 
 | wave | new |
 |---|---|
