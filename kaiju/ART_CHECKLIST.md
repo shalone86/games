@@ -1,0 +1,104 @@
+# Kaiju Rage: art + sound checklist
+
+Everything in `rage.p8` that's a stand-in, with its sprite number, size and
+what to keep in mind. Draw over the stand-ins in PICO-8's sprite editor
+(the number of the selected sprite shows at the bottom); the game picks them
+up as soon as you save (Ctrl+S) and run (Ctrl+R).
+
+A 16 × 16 drawing uses a 2 × 2 block of sprites starting at its number (so
+sprite 0 also covers 1, 16 and 17).
+
+## Rules for every drawing
+
+- **Face right.** The game mirrors everything for left.
+- **Feet / ground on the bottom rows.** Kaiju stand on the bottom of their
+  16 × 16 box; buildings sit on their bottom row.
+- **Color 0 (black) is see-through.** Use 1 (dark blue) or 5 (dark grey)
+  for black outlines.
+- **Kaiju colors matter.** The special effects recolor the kaiju by swapping
+  these colors: **11, 3, 10, 9, 4, 6** (green, dark green, yellow, orange,
+  brown, light grey). Rage mode turns them rainbow, the *hide* skill turns
+  them stone grey, the gold glow means "can't be hurt", and the rival is
+  tinted purple. Parts in other colors (eyes, mouths, outlines) stay as they
+  are, which is usually what you want. If you use different main colors,
+  tell me (or edit the `stone`, `gold`, `purple` lines and `rainbow()` in
+  tab 6).
+- **Breath comes out of the mouth** at about 7 pixels right of the middle
+  and 11 up from the feet. Put the mouth near there (row 5 of the 16, right
+  side) or tell me where it ended up.
+
+## Kaiju (16 × 16, three each)
+
+- [ ] **0** Gora: walk 1
+- [ ] **2** Gora: walk 2
+- [ ] **4** Gora: attacking (mouth open; shown while breathing, dashing, in rage mode)
+- [ ] **64** Luna: wings up
+- [ ] **66** Luna: wings down
+- [ ] **68** Luna: attacking
+- [ ] **70** Korax: walk 1
+- [ ] **72** Korax: walk 2
+- [ ] **74** Korax: attacking
+
+(The rival is one of these, tinted purple; no extra drawing needed.)
+
+## City (16 × 16)
+
+- [ ] **6** house
+- [ ] **8** office
+- [ ] **10** tower
+- [ ] **12** rubble (what's left of any building)
+
+## Army
+
+- [ ] **32** tank (8 × 8)
+- [ ] **33** helicopter, frame 1 (8 × 8)
+- [ ] **34** helicopter, frame 2 (8 × 8; spin the rotor)
+- [ ] **76** big tank (16 × 16)
+- [ ] **78** bomber (16 × 16, side view, nose right)
+- [ ] **96** mech, step 1 (16 × 16, kaiju-sized)
+- [ ] **98** mech, step 2 (16 × 16)
+
+## Small things (8 × 8)
+
+- [ ] **35** tank shell
+- [ ] **36** missile (nose right)
+- [ ] **37** tree (drawn in the middle of its lot)
+- [ ] **40** heart
+- [ ] **41** coin
+
+Not drawings: skill orbs are colored circles (each skill's `c=` color in
+tab 1), and the rival's fire, bombs, sparks and shockwaves are drawn with
+circles. Say if you'd rather draw any of those as sprites.
+
+Not used by Kaiju Rage (skip): 38 car, 39 gem, 46/47 brick and grass, 48/49
+little hero (the cookbook uses those).
+
+## Sounds (sound editor)
+
+- [ ] **0** stomp / landing / shockwave
+- [ ] **1** breath + zap (plays over and over while breathing, so keep it short)
+- [ ] **2** explosion
+- [ ] **3** pickup (coin, grab)
+- [ ] **4** kaiju hurt
+- [ ] **5** roar / rage mode starts
+- [ ] **6** whoosh (dash, take off, throw)
+- [ ] **7** enemy shot
+- [ ] **8** menu blip
+- [ ] **9** level up / new skill
+- [ ] **10** crunch (small building, mech punch)
+
+## Music
+
+- [ ] **Pattern 0** (sound effects 16 + 17): the main loop. Plays on
+  channels 0 and 1 only, so sound effects never cut it off.
+- [ ] **Pattern 1** (sound effects 18 + 19): rage mode. Fast and bright
+  (a Super Star feel). Must loop on itself.
+
+If you add more channels or patterns, tell me which so the `music()` calls
+match.
+
+## Last
+
+- [ ] Title / cart picture: run the game, press **F7** on a nice moment to
+  capture the cart's label.
+- [ ] Final names for the game and the three kaiju (tab 1, `roster`).

@@ -24,31 +24,33 @@ others are trademarks, so the shipped game needs its own monsters.
 |---|---|
 | arrows | walk |
 | **X** (hold) | breath, in the direction you face. Drains the bar under your feet; let go to refill |
-| **Z** | **dash** (walkers) or **leap** (flyers) |
+| **Z** | **dash** (walkers) or **fly** (flyers): Z takes off, Z again dives down and stomps |
 | **Z + X** together | **grab** what's in front of you: a tank, helicopter, big tank, or a whole building |
 | Z or X while holding something | **throw** it |
 | Z or X while standing on a new skill orb | put it in **slot 1** (Z) or **slot 2** (X) |
 
-Z waits 5 frames (a sixth of a second) before dashing or leaping, to see if X
+Z waits 5 frames (a sixth of a second) before dashing or flying, to see if X
 comes too. That's what lets Z+X mean "grab" without a third button. Breath
 waits the same.
 
 - **Dash:** quick burst, can't be hurt, 3 damage to buildings in the way
   (towers stop you), 1⅓ s cooldown.
-- **Leap:** over a second in the air, can't be hurt, crushes what you land on.
-  **4 s cooldown**, since leaping is so strong. The green "z" in the corner
-  lights up when it's ready.
+- **Fly:** Z takes off; fly over everything for up to 5 s. Tanks, bombs,
+  punches and the rival's bite can't reach you up there, but **missiles and
+  the rival's fire can**. Z again (or running out of time) dives down:
+  whatever you land on is crushed, with a big shockwave. Then a **3 s
+  cooldown**. The green "z" in the corner lights up when it's ready.
 
 ## The kaiju
 
 | | kaiju | moves | hp | speed | skill orbs |
 |---|---|---|---|---|---|
-| 1 | **Gora**, big lizard | dash | 10 | medium | flame, stomp, roar, rage, rejuv |
-| 2 | **Luna**, giant moth | leap | 8 | fast | gust, spores, zap, dust, cocoon |
+| 1 | **Gora**, big lizard | dash | 10 | medium | flame, stomp, roar, hide, rejuv |
+| 2 | **Luna**, giant moth | fly | 8 | fast | gust, spores, zap, dust, cocoon |
 | 3 | **Korax**, spiked tank | dash | 13 | slow | spikes, quake, shell, thorns, rock |
 
-Your rule, walkers dash and flyers leap, decides each one's Z move (it's
-`z="dash"` or `z="leap"` in the roster, tab 1, so it's one word to change).
+Your rule, walkers dash and flyers fly, decides each one's Z move (it's
+`z="dash"` or `z="fly"` in the roster, tab 1, so it's one word to change).
 
 ## Skill orbs (the survivor part)
 
@@ -69,7 +71,7 @@ themselves, no buttons. You start with the first one.
 | flame | orange | every 1–2 s, a flame jet at the nearest enemy |
 | stomp | brown | a shockwave around you every few seconds |
 | roar | lavender | every 5–7 s, everything nearby goes **dizzy** (wanders, shoots the wrong way; shows a "?") |
-| rage | red | always on: you turn red and take 20/40/60% less damage |
+| hide | grey | always on: stone-grey skin, take 20/40/60% less damage (was "rage"; renamed so only rage mode is rage) |
 | rejuv | green | always on: heals over time, but you're slower and take 50% more damage |
 
 **Luna:** gust (pushes enemies away, blows away shots) · spores (circle you,
@@ -82,15 +84,20 @@ shockwave) · shell (can't be hurt for 2–3½ s, every 6–9 s) · thorns
 (getting hit blasts everything around you) · rock (lobs a boulder at the
 nearest enemy).
 
-## Rage meter
+## Rage mode
 
 Half of what you smash drops a **coin**. 20 coins fill the **rage** meter,
-and it goes off by itself: **RAMPAGE!** A blast around you, then 6 seconds of
-double damage, more speed, can't be hurt, and walking through anything breaks
-it. You flash red.
+and it goes off by itself (think Mario's star, or Super Sonic):
 
-(Gora's *rage* orb and the rage meter share a name. Rename either one, e.g.
-the meter to "fury", if that gets confusing.)
+- A white flash, a freeze, three shockwaves and a giant wobbling
+  **RAGE MODE!**
+- For **10 seconds**: you're 1.5× bigger, glowing, cycling through every
+  color, with a sparkle trail and its own fast music.
+- **Can't be hurt**, 1.5× speed, **double damage and double points**, and
+  anything you touch explodes. Breath is free and almost twice as long, in
+  rainbow.
+- The meter drains as it runs; in the last 2 seconds you blink, so you know
+  it's ending.
 
 ## The rival kaiju
 
@@ -118,7 +125,11 @@ A new wave every 40 seconds; 8 waves in all.
 | 6 | **mechs**: kaiju-sized, 10 hp at double defense, punch up close, fire 3 missiles |
 | 8 | **final wave**: 3 mechs at once. Beat them and the city is yours (+1000) |
 
-More helicopters as the waves go on, and more enemies at once.
+Enemies arrive in **squads** (tanks and helicopters come in groups that grow
+with the waves), a new group every 2 s at first and every ⅓ s by the end, up
+to **13 enemies at once in wave 1, rising to 48 by wave 8**. The game can
+handle about 60 at once without slowing down (it only checks the buildings
+near each thing instead of all 300), so this can go higher.
 
 Best score saves per kaiju.
 
@@ -131,7 +142,7 @@ Best score saves per kaiju.
 | 0 | setup, title/play/over, **`buttons()`** (all of the Z / X / Z+X logic) |
 | 1 | **`roster`** (the kaiju) and **`sk`** (the 15 skills), skill helpers |
 | 2 | the city, `hit()` (all damage goes through it) |
-| 3 | `upd_play` (skills each frame, rampage, dash, leap), breath, grab/throw, `hurt` |
+| 3 | `upd_play` (skills each frame, rage mode, dash, fly), breath, grab/throw, `hurt` |
 | 4 | `et` (enemy stats), `pick()` (which enemy each wave), enemies, bombs, **`rival_ai`** |
 | 5 | drops (coins, hearts, orbs), pickups and the swap prompt, thrown things, effects |
 | 6 | drawing, HUD, title |
@@ -151,8 +162,9 @@ attack), speed, points. Defense 2 means it takes half damage and hits for 2.
 
 ### Room left
 
-About **6,900 of 8,192 tokens** are used. A fourth kaiju with simple skills
-fits; anything big might need trimming elsewhere first.
+About **7,400 of 8,192 tokens** are used. A fourth kaiju with simple skills
+still fits (a skill is about 30–60 tokens); anything bigger means trimming
+something first, which I can do.
 
 ## Sprite numbers (new in this cart)
 
@@ -174,6 +186,6 @@ tree, heart).
 python3 tools/smoke.py kaiju/rage.p8 kaiju/rage_smoke.lua
 ```
 
-plays all three kaiju: the grab-and-throw chord, dash/leap, breath, orb pickups and swaps,
-rampage, every skill at level 3, the rival, the late waves and the final-wave
+plays all three kaiju: the grab-and-throw chord, dash/fly, breath, orb pickups and swaps,
+rage mode, every skill at level 3, the rival, the late waves and the final-wave
 win. `kaiju/rage_shots.lua` retakes the screenshots.

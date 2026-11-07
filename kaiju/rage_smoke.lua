@@ -13,7 +13,7 @@ for c=1,#roster do
  printh("  thrown: "..#objs.." objs, held="..tostr(k.held))
  -- z tap = dash/leap
  press() frames(5) press(4) frames(3) press() frames(2)
- printh("  z move: dash="..k.dash.." jump="..k.jt)
+ printh("  z move: dash="..k.dash.." fly="..k.fly)
  frames(60)
  -- x hold = breath
  press(1,5) frames(20) printh("  breath len="..k.bl.." en="..k.en)

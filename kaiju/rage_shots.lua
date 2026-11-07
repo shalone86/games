@@ -9,13 +9,14 @@ for e in all(ens) do e.x,e.y=k.x+rnd(100)-50,k.y+rnd(90)-50 end
 press(1) frames(20) press(1,5) frames(12) k.inv=0 shot("r_gora")
 -- a skill orb prompt + rage meter half full
 k.rage=12 press() add(drops,{x=k.x,y=k.y,o=5}) frames(2) shot("r_swap")
--- rampage
-k.rage=19 add(drops,{x=k.x+1,y=k.y,s=41}) del(drops,k.pend) frames(5) shot("r_rampage")
+-- rage mode
+k.rage=19 add(drops,{x=k.x+1,y=k.y,s=41}) del(drops,k.pend) frames(14) shot("r_rampage")
+press(1,5) frames(20) shot("r_rage2") press()
 -- luna leaping with spores + zap, a rival nearby
 sel=2 start() k.sl={7,8} k.lv={3,2}
 rt=1 frames(2) rival.x,rival.y=k.x+40,k.y-10
 for i=1,5 do spawn(1) end
-press(2) frames(20) press(4) frames(3) press() frames(14) shot("r_luna")
+press(2) frames(20) press(4) frames(8) press(1) frames(20) shot("r_luna")
 -- korax holding a building, rival fleeing off screen
 sel=3 start() k.sl={11,15} k.lv={2,2}
 k.held,k.hw=10,2

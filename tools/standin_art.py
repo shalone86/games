@@ -535,7 +535,14 @@ for i in range(32):
         _drum.append((0, 0, 0, 0))
 SFX[17] = (16, _drum)
 
-MUSIC = ["03 10114243"]  # pattern 0: loop on itself, channels 0+1
+# rage mode: a fast, bright loop. 18 = lead, 19 = drums.
+_lead = []
+for p in [36, 40, 43, 48, 43, 40, 38, 41, 45, 50, 45, 41, 40, 43, 47, 52]:
+    _lead += [(p, 3, 4, 0), (p + 12 if p < 45 else p, 4, 2, 5)]
+SFX[18] = (7, _lead)
+SFX[19] = (7, [(12, 6, 6, 3) if i % 4 == 0 else (40, 6, 2, 5) if i % 2 == 0 else (0, 0, 0, 0) for i in range(32)])
+
+MUSIC = ["03 10114243", "03 12134243"]  # pattern 0: loop on itself, channels 0+1
 
 
 # ---------------------------------------------------------------- writers

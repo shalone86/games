@@ -58,13 +58,13 @@ function start()
  k={x=world/2,y=world/2,vx=0,vy=0,
   fx=1,fy=0,face=1,fr=0,z=0,
   hp=pk.hp,mhp=pk.hp,inv=0,en=60,bl=0,
-  dash=0,dcd=0,jt=0,jcd=0,zt=0,xt=0,
+  dash=0,dcd=0,fly=0,jcd=0,zt=0,xt=0,
   rage=0,rg=0,shell=0,ang=0,
   -- 2 skill slots: skill,
   -- level, timer
   sl={pk.sk[1]},lv={1,0},tm={0,0}}
  ens,shots,fx,pops,drops,objs,clouds,bolts={},{},{},{},{},{},{},{}
- score,tm,secs,shake,stop,bt=0,0,0,0,0,0
+ score,tm,secs,shake,stop,bt,flash=0,0,0,0,0,0,0
  spawn_t,wave,rt,rival,nr,fin,dm=60,1,1200,nil,0,0,1
  cx,cy=k.x-64,k.y-64
  st="play"
@@ -130,7 +130,7 @@ end
 -- sk = its 5 skills below
 roster={
  {n="gora",d="big lizard",z="dash",sp=0,hp=10,spd=1.2,bc=12,sk=split"1,2,3,4,5"},
- {n="luna",d="giant moth",z="leap",sp=64,hp=8,spd=1.35,bc=10,sk=split"6,7,8,9,10"},
+ {n="luna",d="giant moth",z="fly",sp=64,hp=8,spd=1.35,bc=10,sk=split"6,7,8,9,10"},
  {n="korax",d="spiked tank",z="dash",sp=70,hp=13,spd=1.05,bc=9,sk=split"11,12,13,14,15"},
 }
 
@@ -161,8 +161,8 @@ sk={
  {n="roar",c=13,f=function(l)
   dizzy(40+l*12,90+l*30) return 240-l*30
  end},
- -- red, and takes less damage
- {n="rage",c=8,p=function(l)
+ -- stone skin: takes less damage
+ {n="hide",c=6,p=function(l)
   k.arm*=1-l*.2 k.tint=true
  end},
  -- heals, but slower and
@@ -287,7 +287,10 @@ function orb() return pk.sk[flr(rnd(5))+1] end
 -- the city
 
 function make_city()
- blds={}
+ -- gr: the building on each
+ -- 16x16 lot, so we only ever
+ -- look at the ones nearby
+ gr={}
  for bx=0,world-1,64 do
   for by=0,world-1,64 do
    for i=0,2 do
@@ -295,7 +298,7 @@ function make_city()
      local x,y,r=bx+16+i*16,by+16+j*16,rnd()
      local kd=r<.25 and 0 or r<.6 and 1 or r<.85 and 2 or 3
      if r<.93 and dist(x+8,y+8,world/2,world/2)>40 then
-      add(blds,{x=x,y=y,k=kd,hp=bhp[kd+1],fl=0})
+      gr[x\16+y\16*24]={x=x,y=y,k=kd,hp=bhp[kd+1],fl=0}
      end
     end
    end
@@ -309,13 +312,24 @@ function dist(x1,y1,x2,y2)
  return sqrt(dx*dx+dy*dy)*16
 end
 
+-- standing buildings within
+-- about r of x,y
+function near_b(x,y,r)
+ local l={}
+ for i=(x-r)\16-1,(x+r)\16+1 do
+  for j=(y-r)\16-1,(y+r)\16+1 do
+   local b=gr[i+j*24]
+   if b and not b.dead then add(l,b) end
+  end
+ end
+ return l
+end
+
 function bump(x,y)
- for b in all(blds) do
-  if not b.dead then
-   local h=b.k==0 and 7 or 11
-   if abs(x-b.x-8)<h and abs(y-b.y-8)<h then
-    return b
-   end
+ for b in all(near_b(x,y,8)) do
+  local h=b.k==0 and 7 or 11
+  if abs(x-b.x-8)<h and abs(y-b.y-8)<h then
+   return b
   end
  end
 end
@@ -336,8 +350,8 @@ function hit(x,y,r,d,eo)
  local n=0
  d*=dm
  if not eo then
-  for b in all(blds) do
-   if not b.dead and abs(b.x+8-x)<r+6 and abs(b.y+8-y)<r+6 then
+  for b in all(near_b(x,y,r+6)) do
+   if abs(b.x+8-x)<r+6 and abs(b.y+8-y)<r+6 then
     n+=1 b.hp-=d b.fl=4
     if b.hp<=0 then smash(b) end
    end
@@ -376,7 +390,7 @@ function upd_play()
  -- skills set these fresh
  -- every frame
  k.arm,k.spm,k.reg,k.tint,k.thorn=1,1,0,false,0
- k.atk,k.safe=false,k.z>0
+ k.atk,k.safe=false,false
  k.inv=max(k.inv-1,0)
  for i=1,2 do
   local id=k.sl[i]
@@ -392,7 +406,14 @@ function upd_play()
  if k.shell>0 then k.shell-=1 k.safe=true end
  dm=1
  if k.rg>0 then
-  k.rg-=1 k.safe,dm=true,2 k.spm*=1.3
+  -- rage mode: double damage +
+  -- points, faster, can't be
+  -- hurt, and anything you
+  -- touch blows up
+  k.rg-=1 k.safe,dm=true,2 k.spm*=1.5
+  if tm%2==0 then hit(k.x,k.y-6,12,3) end
+  add(fx,{x=k.x+rnd(20)-10,y=k.y-rnd(24),dx=rnd()-.5,dy=-rnd(),t=12,c=rnd(split"7,10,9,8,14,12,11")})
+  if k.rg==0 then music(0,0,3) banner("rage over") end
  end
  k.hp=min(k.hp+k.reg,k.mhp)
 
@@ -419,12 +440,12 @@ function upd_play()
   hit(k.x,k.y-4,8,2,true)
   add(fx,{x=k.x,y=k.y-8,dx=0,dy=0,t=6,c=9})
  end
- if k.jt>0 then
-  -- a leap is half a sine wave
-  k.jt+=1
-  k.z=-sin(k.jt/80)*32
-  if k.jt>=40 then
-   k.jt,k.z=0,0
+ if k.fly>0 then
+  k.fly-=1 k.z=min(k.z+2,24)
+ elseif k.z>0 then
+  k.z=max(k.z-6,0)
+  if k.z==0 then
+   k.jcd=90
    local b=bump(k.x,k.y)
    while b do smash(b) b=bump(k.x,k.y) end
    hit(k.x,k.y,22,3)
@@ -445,19 +466,22 @@ function zmove()
   if k.dcd==0 and k.z==0 then
    k.dash,k.dcd=10,40 sfx(6)
   end
- -- leaps are strong, so they
- -- wait 4 seconds
- elseif k.jcd==0 and k.jt==0 then
-  k.jt,k.jcd=1,120 sfx(6)
+ -- fly: z takes off, z again
+ -- (or running out) dives down
+ -- and stomps. then a 3 s wait
+ elseif k.fly>0 then k.fly=0
+ elseif k.jcd==0 and k.z==0 then
+  k.fly=150 sfx(6)
  end
 end
 
 function breath()
  if k.en<=0 then k.bl=0 return end
  if k.rg==0 then k.en-=1 end
+ local m=k.rg>0 and 96 or 56
  k.atk=true
  k.vx*=.4 k.vy*=.4
- k.bl=min(k.bl+5,56)
+ k.bl=min(k.bl+5,m)
  if tm%3==0 then
   for i=8,k.bl,8 do
    hit(k.x+k.fx*i,k.y-4+k.fy*i,4,1)
@@ -477,8 +501,8 @@ function grab()
    sfx(3) return
   end
  end
- for b in all(blds) do
-  if not b.dead and b.k>0 and abs(b.x+8-gx)<12 and abs(b.y+8-gy)<12 then
+ for b in all(near_b(gx,gy,12)) do
+  if b.k>0 and abs(b.x+8-gx)<12 and abs(b.y+8-gy)<12 then
    k.held,k.hw=bspr[b.k+1],2
    smash(b) return
   end
@@ -528,11 +552,14 @@ function hurt(n)
 end
 
 -- the rage meter is full
+-- the rage meter is full:
+-- rage mode, like a super star
 function rampage()
- k.rage,k.rg=0,180
- nova(40,4,8)
- shake,stop=6,4
- banner("rampage!") sfx(5)
+ k.rage,k.rg=0,300
+ nova(48,4,7)
+ ring(k.x,k.y,70,10) ring(k.x,k.y,90,8)
+ shake,stop,flash=8,8,3
+ sfx(5) music(1,0,3)
 end
 
 -->8
@@ -548,10 +575,11 @@ function pick()
  return rnd()<.25+wave*.04 and 2 or 1
 end
 
-function spawn(kd)
- local a,q=rnd(),et[kd]
- local e={k=kd,x=mid(4,k.x+cos(a)*90,world-4),
-  y=mid(4,k.y+sin(a)*90,world-4),
+function spawn(kd,a)
+ a=a or rnd()
+ local q=et[kd]
+ local e={k=kd,x=mid(4,k.x+cos(a)*90+rnd(20)-10,world-4),
+  y=mid(4,k.y+sin(a)*90+rnd(20)-10,world-4),
   hp=q[3],df=q[4],w=q[2],cd=60+rnd(60),fl=0,dz=0,face=1}
  if kd==4 then
   -- bombers fly straight at
@@ -572,8 +600,13 @@ end
 
 function upd_army()
  spawn_t-=1
- if spawn_t<=0 and #ens<3+wave*2 then
-  spawn(pick()) spawn_t=max(20,100-wave*10)
+ -- squads: tanks and helis
+ -- come in groups that grow
+ -- with the waves
+ if spawn_t<=0 and #ens<8+wave*5 then
+  local kd,a=pick(),rnd()
+  for i=1,kd<3 and 1+rnd(wave/2+1) or 1 do spawn(kd,a) end
+  spawn_t=max(8,60-wave*7)
  end
  if not rival then
   rt-=1
@@ -600,7 +633,7 @@ function upd_army()
     e.x+=cos(a+.25)*s e.y+=sin(a+.25)*s
    end
    if e.cd<=0 and d<80 then
-    if kd==5 and d<18 then
+    if kd==5 and d<18 and k.z==0 then
      -- mechs punch up close
      hurt(2) e.cd=40 sfx(10)
     else
@@ -633,11 +666,11 @@ function upd_army()
     del(shots,s)
     hit(s.x,s.y,10,2)
     ring(s.x,s.y,14,9) boom(s.x,s.y,8) sfx(2)
-    if abs(s.x-k.x)<12 and abs(s.y-k.y+6)<12 then hurt(2) end
+    if abs(s.x-k.x)<12 and abs(s.y-k.y+6)<12 and k.z==0 then hurt(2) end
    end
   elseif s.t<0 then
    del(shots,s)
-  elseif abs(s.x-k.x)<5 and abs(s.y-k.y+7)<7 then
+  elseif abs(s.x-k.x)<5 and abs(s.y-k.y+7+k.z)<7 and (k.z==0 or s.s==36 or s.c) then
    del(shots,s) boom(s.x,s.y,5) hurt(s.d)
   end
  end
@@ -658,7 +691,7 @@ function rival_ai(e,d,a)
  end
  e.face=sgn(k.x-e.x)
  if not e.run and e.cd<=0 and e.dz==0 then
-  if d<14 then
+  if d<14 and k.z==0 then
    hurt(2) push(e,14) e.cd=45 sfx(10)
   elseif d<64 then
    for i=0,3 do
@@ -668,8 +701,8 @@ function rival_ai(e,d,a)
   end
  end
  -- it tramples small things
- for b in all(blds) do
-  if not b.dead and b.k<2 and abs(b.x+8-e.x)<10 and abs(b.y+8-e.y)<10 then
+ for b in all(near_b(e.x,e.y,10)) do
+  if b.k<2 and abs(b.x+8-e.x)<10 and abs(b.y+8-e.y)<10 then
    b.dead=true boom(b.x+8,b.y+8,4)
   end
  end
@@ -783,6 +816,7 @@ function upd_fx()
 end
 
 function addscore(n,x,y)
+ n*=dm
  score=min(score+n,32000)
  if n>=10 then add(pops,{x=x,y=y,t=30,s="+"..n}) end
 end
@@ -817,9 +851,10 @@ function drw_play()
  fillp()
 
  for pass=0,1 do
-  for b in all(blds) do
-   if (b.y+10<k.y)==(pass==0) and b.x>cx-16 and b.x<cx+128 and b.y>cy-16 and b.y<cy+128 then
-    drw_bld(b)
+  for j=cy\16-1,(cy+128)\16 do
+   for i=max(cx\16-1,0),(cx+128)\16 do
+    local b=gr[i+j*24]
+    if b and (b.y+10<k.y)==(pass==0) then drw_bld(b) end
    end
   end
   if pass==0 then
@@ -856,7 +891,7 @@ function drw_play()
  if k.bl>0 then
   local mx,my=k.x+k.face*7,k.y-11
   for i=0,k.bl,3 do
-   circfill(mx+k.fx*i,my+k.fy*i,1+rnd(2),pk.bc)
+   circfill(mx+k.fx*i,my+k.fy*i,1+rnd(k.rg>0 and 4 or 2),k.rg>0 and 8+(i/3+t()*20)%7 or pk.bc)
   end
   line(mx,my,mx+k.fx*k.bl,my+k.fy*k.bl,7)
  end
@@ -878,6 +913,7 @@ function drw_play()
  camera()
  drw_hud()
  if st=="over" then drw_over() end
+ if flash>0 then flash-=1 rectfill(0,0,127,127,7) end
 end
 
 function drw_bld(b)
@@ -901,18 +937,26 @@ function tint(s)
  local p=split(s)
  for i=1,#p,2 do pal(p[i],p[i+1]) end
 end
-red="11,8,3,2,10,8,9,2,4,8,6,14"
+stone="11,6,3,5,10,6,9,5,4,5,6,7"
 gold="11,10,3,9,10,7,9,10,4,10,6,7"
 purple="11,14,3,2,10,14,9,2,4,14,6,13"
 
 function drw_k()
  ovalfill(k.x-6,k.y-2,k.x+6,k.y+2,1)
  if k.inv%4<2 then
-  if k.tint then tint(red) end
+  if k.tint then tint(stone) end
+  local w=16
   if k.rg>0 then
-   if t()*8%2<1 then tint(red) end
+   -- rage mode: big, glowing,
+   -- every color of the rainbow
+   w=24
+   fillp(0b0101101001011010.1)
+   circfill(k.x,k.y-12-k.z,15+sin(t()*2)*2,10)
+   fillp()
+   if k.rg>60 or t()*6%2<1 then rainbow() end
   elseif k.safe then tint(gold) end
-  kspr(pk.sp+(k.atk and 4 or flr(k.fr)%2*2),k.x-8,k.y-16-k.z,k.face<0)
+  local f=pk.sp+(k.atk and 4 or flr(k.fr)%2*2)
+  sspr(f%16*8,f\16*8,16,16,k.x-w/2,k.y-w-k.z,w,w,k.face<0)
   pal()
  end
  if k.held then
@@ -953,6 +997,13 @@ function bolt(x1,y1,x2,y2)
   if i==4 then x,y=x2,y2 end
   line(px,py,x,y,i%2==0 and 7 or 12)
   px,py=x,y
+ end
+end
+
+function rainbow()
+ local c=split"8,9,10,11,12,14,7"
+ for i,p in pairs(split"11,3,10,9,4,6") do
+  pal(p,c[(flr(t()*20)+i)%7+1])
  end
 end
 
@@ -1005,7 +1056,10 @@ function drw_hud()
  -- rage meter
  print("rage",80,121,8)
  rect(97,121,115,125,5)
- rectfill(98,122,98+16*k.rage/20,124,k.rg>0 and 10 or 8)
+ rectfill(98,122,98+16*(k.rg>0 and k.rg/300 or k.rage/20),124,k.rg>0 and 8+t()*15%7 or 8)
+ if k.rg>210 then
+  oprint("\^w\^trage mode!",24,40+sin(t()*2)*3,8+t()*15%7)
+ end
  -- z move ready?
  local rdy=k.dcd==0 and k.jcd==0
  print("z",121,121,rdy and 11 or 5)
@@ -1210,8 +1264,8 @@ __sfx__
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000c150000000c130000000c150000000c130000000f150000000f130000000c150000000c1300000013150000001313000000111500000011130000000f150000000f130000000e150000000e13000000
 001000000a663000003461500000226450000034615000000a663000003461500000226450000034615000000a663000003461500000226450000034615000000a66300000346150000022645000003461500000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00070000243403042528340344252b3403742530340304252b340374252834034425263403242529340354252d3402d42532340324252d3402d425293403542528340344252b340374252f3402f4253434034425
+000700000c6630000028625000000c6630000028625000000c6630000028625000000c6630000028625000000c6630000028625000000c6630000028625000000c6630000028625000000c663000002862500000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1258,3 +1312,4 @@ __sfx__
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __music__
 03 10114243
+03 12134243
