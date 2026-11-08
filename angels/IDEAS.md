@@ -31,6 +31,53 @@ For the fourth:
 Thrones for looks and a new move, Powers for the theme. (Or five choirs: the
 roster is just a list.)
 
+## What each one looks like
+
+The key for 16 × 16 sprites is that each one has a **different shape**
+(silhouette), so you can tell them apart at a glance even when they're
+recolored as demons:
+
+| | shape | look (from Scripture) | colors | plays like |
+|---|---|---|---|---|
+| **Archangel** (Michael) | upright person | a man in armor with two wings, sword raised, a shield; he throws down the dragon (Revelation 12:7–9) | white, gold, blue | **Gora**: walks, Z = charge (dash); X = light from the raised sword |
+| **Seraph** | an X of wings | **six wings**: two cover the face, two cover the feet, two to fly (Isaiah 6:2). Mostly wings, barely a body; "seraph" means *burning one* | red, orange, gold | **Luna**: flies (Z takes off, Z again swoops down); X = fire |
+| **Cherub** | wide, low, beast-like | **four faces** (man, lion, ox, eagle), four wings, straight legs with calf's feet, gleaming like bronze (Ezekiel 1:5–10); guards Eden with a **flaming sword turning every way** (Genesis 3:24). At 16 × 16, draw the lion face forward and hint at the eagle's wings | bronze, gold, blue-white | **Korax**: slow and tough, Z = dash; the turning sword circles it |
+| **Throne** | a circle | **wheels within wheels**, rims full of eyes, moving in any direction without turning (Ezekiel 1:15–21) | fire orange, gold rim, white eyes | new: Z = roll (a long dash that lights every building it passes) |
+
+A note on cherubim: the chubby baby angels in Renaissance paintings (putti)
+are often called "cherubs", but the cherubim in the Bible are fierce
+guardians. The game should use the Bible's version, which also makes the
+better fighter. (A cute little guardian angel could be a fifth, kid-friendly
+character later: the "Angels" choir.)
+
+**Demons** are the same four sprites recolored: purple and black instead of
+white and gold, red eyes, and maybe a version with ragged wings. The tint
+code already does recoloring (the rival kaiju is a purple tint), so this is
+nearly free.
+
+### Their skills, renamed from the kaiju
+
+| kaiju | angel version |
+|---|---|
+| breath | a beam of light (Seraph: fire) |
+| rage mode | **glory**: the same Super Star effect in white and gold |
+| roar (makes dizzy) | Seraph's **"Holy, holy, holy"** (Isaiah 6:3): demons are stunned |
+| rejuv | Seraph's **live coal** (Isaiah 6:6–7): heals |
+| spores (circling) | Cherub's **turning flaming sword** |
+| shell | Cherub's guard / Michael's **shield** |
+| zap | Michael's **spear** |
+| stomp / quake | Michael **casting down** (a shockwave) |
+| gust | wings |
+| a new one for Thrones | **eyes**: shows where the demons are (like the rival arrow, for all of them) |
+
+## The two modes, angel version
+
+- **Brighten the city** (= destroy the city): light up half the buildings,
+  faster = more points. The ratchet idea below keeps demons from undoing
+  everything.
+- **Protect the city** (= survive the waves): hold off the hordes for 8 waves;
+  the last one is a fallen-angel boss.
+
 ## The back-and-forth problem
 
 Your wife is right: if you light a building and a demon darkens it again, the
