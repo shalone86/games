@@ -16,7 +16,9 @@ __lua__
 
 cartdata("sdcason_kaiju_rage")
 world=384
-st,sel="title",1
+-- gm: 1 destroy the city,
+--     2 survive the waves
+st,sel,gm="title",1,1
 -- buildings, by kind+1:
 -- tree, house, office, tower
 bhp=split"1,1,3,6"
@@ -35,6 +37,10 @@ end
 function _update()
  if st=="title" then upd_title()
  elseif st=="play" then upd_play()
+ elseif st=="intro" then
+  -- the big goal message
+  it-=1
+  if it<=0 then st="play" end
  else
   ot+=1 upd_fx()
   if ot>45 and (btnp(4) or btnp(5)) then st="title" end
@@ -48,6 +54,7 @@ end
 function upd_title()
  if btnp(0) then sel-=1 sfx(8) end
  if btnp(1) then sel+=1 sfx(8) end
+ if btnp(2) or btnp(3) then gm=3-gm sfx(8) end
  sel=(sel-1)%#roster+1
  if btnp(4) or btnp(5) then start() end
 end
@@ -55,6 +62,8 @@ end
 function start()
  pk=roster[sel]
  make_city()
+ -- destroy mode: wreck half
+ goal,nd=flr(nb*.5),0
  k={x=world/2,y=world/2,vx=0,vy=0,
   fx=1,fy=0,face=1,fr=0,z=0,
   hp=pk.hp,mhp=pk.hp,inv=0,en=60,bl=0,
@@ -65,19 +74,24 @@ function start()
   sl={pk.sk[1]},lv={1,0},tm={0,0}}
  ens,shots,fx,pops,drops,objs,clouds,bolts={},{},{},{},{},{},{},{}
  score,tm,secs,shake,stop,bt,flash=0,0,0,0,0,0,0
- spawn_t,wave,rt,rival,nr,fin,dm=60,1,750,nil,0,0,1
+ spawn_t,wave,rt,rival,dm=60,1,750,nil,1
  cx,cy=k.x-64,k.y-64
- st="play"
+ st,it="intro",75
  music(0,0,3)
 end
 
 function over(w)
  st,ot,won="over",0,w
  music(-1) sfx(w and 9 or 2)
- if w then score=min(score+100,32000)
+ -- destroy: the faster, the
+ -- more points. survive: a
+ -- bonus for beating the boss
+ if w then score=min(score+(gm==1 and max(0,300-secs)*5 or 100),32000)
  else boom(k.x,k.y-8,40) end
- best=dget(sel)
- if score>best then dset(sel,score) end
+ -- best scores: slots 4-6
+ -- destroy, 7-9 survive
+ best=dget(sel+gm*3)
+ if score>best then dset(sel+gm*3,score) end
 end
 
 -- x hold: breath
@@ -279,7 +293,7 @@ function make_city()
  -- gr: the building on each
  -- 16x16 lot, so we only ever
  -- look at the ones nearby
- gr={}
+ gr,nb={},0
  for bx=0,world-1,64 do
   for by=0,world-1,64 do
    for i=0,2 do
@@ -288,6 +302,7 @@ function make_city()
      local kd=r<.25 and 0 or r<.6 and 1 or r<.85 and 2 or 3
      if r<.93 and dist(x+8,y+8,world/2,world/2)>40 then
       gr[x\16+y\16*24]={x=x,y=y,k=kd,hp=bhp[kd+1],fl=0}
+      if kd>0 then nb+=1 end
      end
     end
    end
@@ -329,7 +344,11 @@ function smash(b)
  boom(b.x+8,b.y+8,b.k*4+3)
  shake=max(shake,b.k)
  sfx(b.k<2 and 10 or 2)
- if b.k>0 then drop(b.x+8,b.y+8,b.k>1 and .2 or .06) end
+ if b.k>0 then
+  drop(b.x+8,b.y+8,b.k>1 and .2 or .06)
+  nd+=1
+  if gm==1 and nd>=goal and st=="play" then over(true) end
+ end
 end
 
 -- hurt every building and
@@ -369,10 +388,16 @@ function upd_play()
    wave+=1
    -- and a skill orb near you
    add(drops,{x=k.x+rnd(48)-24,y=k.y+rnd(48)-24,o=orb()})
-   if wave==8 then
-    fin=3
-    for i=1,3 do spawn(5) end
-    banner("final wave: mechs!")
+   if gm==2 then
+    -- surviving a wave pays
+    addscore(500,k.x,k.y-20)
+    if wave==8 then
+     if rival then del(ens,rival) end
+     spawn(6)
+     banner("final wave","beat the boss!")
+    else
+     banner("wave "..wave,8-wave.." waves left")
+    end
    else
     banner("wave "..wave)
    end
@@ -581,10 +606,15 @@ function spawn(kd,a)
  end
  if kd==6 then
   -- the rival is another
-  -- kaiju, stronger each time
+  -- kaiju, tougher each wave.
+  -- the last wave of survive:
+  -- a giant boss
   e.rk=sel%#roster+1
-  e.hp=20+nr*10 e.mhp=e.hp
-  rival=e nr+=1
+  e.boss=gm==2 and wave==8
+  e.hp=e.boss and 200 or 10+wave*10
+  e.mhp=e.hp
+  if e.boss then e.w=4 end
+  rival=e
   banner("a rival kaiju!")
  end
  add(ens,e)
@@ -672,24 +702,35 @@ end
 -- away and heal; come back
 -- at 70%
 function rival_ai(e,d,a)
- if e.hp<e.mhp*.3 then e.run=true end
- if e.hp>=e.mhp*.7 then e.run=false end
- local s=.7
+ -- faster + harder hitting
+ -- every wave. bosses never run
+ local s,p=.6+wave*.04,1+wave\3
+ if not e.boss then
+  if e.hp<e.mhp*.3 then e.run=true end
+  if e.hp>=e.mhp*.7 then e.run=false end
+ end
  if e.run and e.dz==0 then
-  a+=.5 s=.9 e.hp+=.04
+  a+=.5 s+=.2 e.hp+=.04
  end
  if d>12 or e.run then
   e.x+=cos(a)*s e.y+=sin(a)*s
  end
  e.face=sgn(k.x-e.x)
  if not e.run and e.cd<=0 and e.dz==0 then
-  if d<14 and k.z==0 then
-   hurt(2) push(e,14) e.cd=45 sfx(10)
-  elseif d<64 then
-   for i=0,3 do
-    add(shots,{x=e.x+cos(a)*i*6,y=e.y+sin(a)*i*6,dx=cos(a)*2.5,dy=sin(a)*2.5,t=40,c=8,d=1})
+  if d<10+e.w*2 and k.z==0 then
+   hurt(p) push(e,14) e.cd=45 sfx(10)
+  elseif d<48+e.w*8 then
+   -- fire! bosses breathe
+   -- three ways at once
+   for j=-1,1 do
+    if e.boss or j==0 then
+     local b=a+j*.07
+     for i=0,3 do
+      add(shots,{x=e.x+cos(b)*i*6,y=e.y+sin(b)*i*6,dx=cos(b)*2.5,dy=sin(b)*2.5,t=40,c=8,d=p})
+     end
+    end
    end
-   e.cd=150 sfx(1)
+   e.cd=max(50,150-wave*12) sfx(1)
   end
  end
  -- it tramples small things
@@ -712,10 +753,7 @@ function kill(e)
   rival,rt=nil,600
   add(drops,{x=e.x,y=e.y,o=orb()})
   banner("rival beaten!")
- end
- if e.k==5 and wave==8 then
-  fin-=1
-  if fin<=0 then over(true) end
+  if e.boss then over(true) end
  end
 end
 
@@ -826,7 +864,14 @@ function addscore(n,x,y)
  if n>=10 then add(pops,{x=x,y=y,t=30,s="+"..n}) end
 end
 
-function banner(s) bn,bt=s,60 end
+-- s2: a big message with s2
+-- underneath
+function banner(s,s2) bn,bn2,bt=s,s2,s2 and 75 or 60 end
+
+function clock()
+ local s=secs
+ return s\60 ..":"..(s%60<10 and "0" or "")..s%60
+end
 
 function pts(s) return s<1 and "0" or flr(s).."0" end
 
@@ -981,10 +1026,11 @@ function drw_e(e)
  if e.fl>0 then white()
  elseif e.k==6 then tint(purple) end
  if e.k==6 then
-  kspr(roster[e.rk].sp+flr(t()*4)%2*2,e.x-8,e.y-8,e.face<0)
+  local f,h=roster[e.rk].sp+flr(t()*4)%2*2,w*4
+  sspr(f%16*8,f\16*8,16,16,e.x-h,e.y-h,h*2,h*2,e.face<0)
   pal()
-  line(e.x-8,e.y-11,e.x+8,e.y-11,2)
-  line(e.x-8,e.y-11,e.x-8+16*e.hp/e.mhp,e.y-11,e.run and 12 or 8)
+  line(e.x-h,e.y-h-3,e.x+h,e.y-h-3,2)
+  line(e.x-h,e.y-h-3,e.x-h+2*h*e.hp/e.mhp,e.y-h-3,e.run and 12 or 8)
  else
   local s=et[e.k][1]
   if e.k==2 then s+=t()*10%2
@@ -1031,9 +1077,19 @@ function drw_hud()
   rectfill(i*4-3,1,i*4-1,5,i<=k.hp+.99 and 8 or 2)
  end
  print(pts(score),56,1,7)
- print("w"..wave,88,1,9)
- local s=secs
- print(s\60 ..":"..(s%60<10 and "0" or "")..s%60,108,1,6)
+ if gm==1 then
+  -- how wrecked the city is
+  print(flr(nd/goal*100).."%",88,1,8)
+  rectfill(0,8,127*min(nd/goal,1),9,8)
+ else
+  print("w"..wave.."/8",86,1,9)
+ end
+ print(clock(),108,1,6)
+ if rival and rival.boss then
+  print("boss",2,11,8)
+  rect(20,11,125,15,2)
+  rectfill(21,12,21+103*rival.hp/rival.mhp,14,8)
+ end
 
  -- arrow to the rival when
  -- it's off the screen
@@ -1073,18 +1129,31 @@ function drw_hud()
 
  if k.held then print("throw: z or x",38,112,10) end
  if bt>0 then
-  bt-=1 oprint(bn,64-#bn*2,30,10)
+  bt-=1
+  if bn2 then
+   oprint("\^w\^t"..bn,64-#bn*4,24,10)
+   oprint(bn2,64-#bn2*2,40,7)
+  else
+   oprint(bn,64-#bn*2,30,10)
+  end
+ end
+ if st=="intro" then
+  local a,b,c=unpack(split(gm==1 and "destroy,the city!,faster = more points" or "survive,8 waves!,longer = more points"))
+  oprint("\^w\^t"..a,64-#a*4,34,8)
+  oprint("\^w\^t"..b,64-#b*4,50,8)
+  oprint(c,64-#c*2,70,7)
  end
 end
 
 function drw_over()
  rectfill(20,40,107,84,0)
  rect(20,40,107,84,won and 11 or 8)
- local m=won and "city conquered!" or "rampage over"
+ local m=won and (gm==1 and "city destroyed!" or "boss beaten!") or "rampage over"
  oprint(m,64-#m*2,44,won and 11 or 8)
  print("score "..pts(score),36,54,7)
  print("best  "..pts(max(best,score)),36,62,6)
- if score>best then print("new best!",46,70,10) end
+ if score>best then print("new!",88,62,10) end
+ print(gm==1 and "time "..clock() or "wave "..wave.." of 8",36,70,9)
  if ot>45 then print("z: menu",50,77,6) end
 end
 
@@ -1112,7 +1181,8 @@ function drw_title()
   circfill(x+2,y+2,2,s.c)
   print(s.n,x+7,y,s.c)
  end
- print("best "..pts(dget(sel)),4,102,6)
+ print("best "..pts(dget(sel+gm*3)),4,102,6)
+ oprint("\148\131 "..(gm==1 and "destroy the city" or "survive 8 waves"),4,111,10)
  print("\139\145 choose  z: go",56,102,6)
 end
 __gfx__

@@ -18,6 +18,23 @@ others are trademarks, so the shipped game needs its own monsters.
 
 ---
 
+## Two modes
+
+Pick on the title screen with **up / down** (left / right picks the kaiju).
+Each mode starts with its goal in big letters.
+
+| | **destroy the city** | **survive 8 waves** |
+|---|---|---|
+| goal | wreck **50%** of the city's buildings | last through 8 waves and beat the **boss** in wave 8 |
+| on screen | a red **destruction bar** under the top bar, and the % of the goal | **W3/8** at the top; each new wave announced big with "5 waves left" |
+| points | everything you smash, plus a **time bonus**: the faster you finish, the more (5 points a second under 5 minutes, ×10 on screen) | everything you smash, plus **500 for every wave** you survive and 1000 for the boss |
+| best score | saved per kaiju, per mode | saved per kaiju, per mode |
+
+The army grows the same way in both (a new wave every 25 s); in destroy
+mode the waves are just the clock getting meaner.
+
+---
+
 ## Controls
 
 | button | does |
@@ -27,7 +44,6 @@ others are trademarks, so the shipped game needs its own monsters.
 | **Z** | **dash** (walkers) or **fly** (flyers): Z takes off, Z again dives down and stomps |
 | **Z + X** together | **grab** what's in front of you: a tank, helicopter, big tank, or a whole building |
 | Z or X while holding something | **throw** it |
-| Z or X while standing on a new skill orb | put it in **slot 1** (Z) or **slot 2** (X) |
 
 Z waits 5 frames (a sixth of a second) before dashing or flying, to see if X
 comes too. That's what lets Z+X mean "grab" without a third button. Breath
@@ -57,12 +73,14 @@ Your rule, walkers dash and flyers fly, decides each one's Z move (it's
 Each kaiju has **its own 5 skills**, each a different orb color. They work by
 themselves, no buttons. You start with the first one.
 
-- Two **slots**. Step on an orb: an empty slot takes it; the **same skill
-  levels up** (up to 3, the dots after its name); otherwise a prompt appears
-  ("new rejuv! z:slot 1 x:slot 2"). Press Z or X to swap it in, or **just walk
-  off** to leave it there (you can come back for it). Nothing pauses.
-- Orbs drop from offices and towers (10%), big enemies (35%), and always from
-  a beaten rival.
+- Two **slots**. **Touch an orb and you take it**, bullet-hell style; to
+  skip one, dodge it. The **same skill levels up** (up to 3, the dots after
+  its name). A new skill fills an empty slot, or else **pushes out your
+  weaker skill** (the older one if they're tied), and a banner says what
+  happened ("zap for gust").
+- Orbs drop from offices and towers (20%), houses (6%), small enemies (8%),
+  big enemies (60%), one near you every new wave, and always from a beaten
+  rival.
 
 **Gora** (your list):
 
@@ -101,16 +119,24 @@ and it goes off by itself (think Mario's star, or Super Sonic):
 
 ## The rival kaiju
 
-At 25 seconds another kaiju (one you didn't pick, tinted purple) arrives.
+At 25 seconds another kaiju (one you didn't pick, tinted purple) arrives,
+and **it gets stronger every wave**: 10 more hp, faster, harder hits
+(1 damage, 2 from wave 3, 3 from wave 6) and more frequent fire.
 
-- It **hunts** you: up close it hits for 2; from a distance it breathes a
+- It **hunts** you: up close it hits; from a distance it breathes a
   burst of fire at you. It tramples houses as it goes.
 - Below **30% hp** it **runs away** and heals; at **70%** it comes back. Its hp
   bar turns blue while it's fleeing.
 - Off screen, an **arrow on the edge** points to it: red **!** = hunting,
   blue **+** = running and healing.
 - Beat it: 500 points, a pile of coins, and a skill orb. 20 s later a new one
-  comes, 10 hp stronger each time.
+  comes, as strong as the wave it arrives in.
+
+### The boss (survive mode, wave 8)
+
+The rival comes back **twice as big** with **200 hp** (a big bar across the
+top of the screen). It never runs away, breathes fire **three ways at once**,
+and hits for 3. Beat it to win.
 
 ## Waves
 
@@ -123,7 +149,7 @@ A new wave every 25 seconds (each one also drops a skill orb near you); 8 waves,
 | 3 | **big tanks**: double size, double attack, double defense (2 hp that takes half damage) |
 | 4 | **bombers**: double size; fly straight over you and drop bombs that blow up buildings (and other enemies) too |
 | 6 | **mechs**: kaiju-sized, 10 hp at double defense, punch up close, fire 3 missiles |
-| 8 | **final wave**: 3 mechs at once. Beat them and the city is yours (+1000) |
+| 8 | **final wave** (survive mode): the boss |
 
 Enemies arrive in **squads** (tanks and helicopters come in groups that grow
 with the waves), a new group every 2 s at first and every ⅓ s by the end, up
@@ -131,7 +157,7 @@ to **13 enemies at once in wave 1, rising to 48 by wave 8**. The game can
 handle about 60 at once without slowing down (it only checks the buildings
 near each thing instead of all 300), so this can go higher.
 
-Best score saves per kaiju.
+Best score saves per kaiju and mode.
 
 ---
 
@@ -144,7 +170,7 @@ Best score saves per kaiju.
 | 2 | the city, `hit()` (all damage goes through it) |
 | 3 | `upd_play` (skills each frame, rage mode, dash, fly), breath, grab/throw, `hurt` |
 | 4 | `et` (enemy stats), `pick()` (which enemy each wave), enemies, bombs, **`rival_ai`** |
-| 5 | drops (coins, hearts, orbs), pickups and the swap prompt, thrown things, effects |
+| 5 | drops (coins, hearts, orbs), pickups, thrown things, effects |
 | 6 | drawing, HUD, title |
 
 ### Adding a kaiju
@@ -162,9 +188,10 @@ attack), speed, points. Defense 2 means it takes half damage and hits for 2.
 
 ### Room left
 
-About **7,400 of 8,192 tokens** are used. A fourth kaiju with simple skills
-still fits (a skill is about 30–60 tokens); anything bigger means trimming
-something first, which I can do.
+About **7,840 of 8,192 tokens** are used: nearly full. A fourth kaiju or
+more skills would mean trimming something first (there's room to: some
+helpers can be merged, and the title screen could get simpler). Ask me
+when you get there.
 
 ## Sprite numbers (new in this cart)
 
@@ -186,6 +213,9 @@ tree, heart).
 python3 tools/smoke.py kaiju/rage.p8 kaiju/rage_smoke.lua
 ```
 
-plays all three kaiju: the grab-and-throw chord, dash/fly, breath, orb pickups and swaps,
-rage mode, every skill at level 3, the rival, the late waves and the final-wave
-win. `kaiju/rage_shots.lua` retakes the screenshots.
+plays all three kaiju in both modes (grab, breath, the Z move, orbs, rage
+mode, the late waves) through to a win: the city destroyed, or the boss
+beaten. `kaiju/rage_shots.lua` retakes the screenshots and
+`kaiju/rage_sim.lua` (add `300` to the command) has a bot play whole games
+to check the pacing. The test scripts are kept tiny because the test runner adds
+its code to the cart, and the cart is near the token limit.

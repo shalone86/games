@@ -17,11 +17,21 @@ import time
 
 PICO8 = os.environ.get("PICO8", "/Applications/PICO-8.app/Contents/MacOS/pico8")
 
+SHOT = """
+function shot(name)
+ printh("shot:"..name)
+ for y=0,127 do
+  local r=""
+  for x=0,127 do r..=sub("0123456789abcdef",pget(x,y)+1,pget(x,y)+1) end
+  printh("px:"..r)
+ end
+end
+"""
+
 HARNESS = """
 -- smoke harness
 __held={}
 function press(...) __held={} for b in all({...}) do __held[b]=true end end
-__real_btn,__real_btnp=btn,btnp
 __f=0
 -- never touch the real save file
 __saves={}
@@ -31,14 +41,6 @@ function btn(b) return __held[b] or false end
 __prev={}
 -- true only on the frame the button goes down
 function btnp(b) return (__held[b] and not __prev[b]) or false end
-function shot(name)
- printh("shot:"..name)
- for y=0,127 do
-  local r=""
-  for x=0,127 do r..=sub("0123456789abcdef",pget(x,y)+1,pget(x,y)+1) end
-  printh("px:"..r)
- end
-end
 function frames(n)
  for i=1,n do
   __f+=1 _update() _draw()
@@ -79,7 +81,9 @@ def main(cart, driver, wait=60):
     drv = open(driver).read()
     text = text.replace("__lua__\n", "__lua__\n", 1)
     parts = re.split(r"(\n__gfx__\n)", text, maxsplit=1)
-    body = parts[0] + "\n-->8\n" + HARNESS + "\n" + drv + "\nprinth('smoke: done')\n"
+    # carts near the 8192-token limit: only add shot() when it's used
+    harness = HARNESS + (SHOT if "shot(" in drv else "")
+    body = parts[0] + "\n-->8\n" + harness + "\n" + drv + "\nprinth('smoke: done')\n"
     out = body + "".join(parts[1:])
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, "smoke.p8")
