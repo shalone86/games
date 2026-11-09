@@ -26,7 +26,7 @@ Each mode starts with its goal in big letters.
 | | **destroy the city** | **survive 8 waves** |
 |---|---|---|
 | goal | wreck **50%** of the city's buildings | last through 8 waves and beat the **boss** in wave 8 |
-| on screen | a red **destruction bar** under the top bar, and the % of the goal | **W3/8** at the top; each new wave announced big with "5 waves left" |
+| on screen | a red **destruction bar** under the top bar, the % of the goal, and an orange **house marker** on the screen edge pointing to the nearest building left, whenever none is close | **W3/8** at the top; each new wave announced big with "5 waves left" |
 | points | everything you smash, plus a **time bonus**: the faster you finish, the more (5 points a second under 5 minutes, ×10 on screen) | everything you smash, plus **500 for every wave** you survive and 1000 for the boss |
 | best score | saved per kaiju, per mode | saved per kaiju, per mode |
 
@@ -74,8 +74,8 @@ Each kaiju has **its own 5 skills**, each a different orb color. They work by
 themselves, no buttons. You start with the first one.
 
 - Two **slots**. **Touch an orb and you take it**, bullet-hell style; to
-  skip one, dodge it. The **same skill levels up** (up to 3, the dots after
-  its name). A new skill fills an empty slot, or else **pushes out your
+  skip one, dodge it. The **same skill levels up** (up to 3; the number after
+  its name, yellow at max). A new skill fills an empty slot, or else **pushes out your
   weaker skill** (the older one if they're tied), and a banner says what
   happened ("zap for gust").
 - Orbs drop from offices and towers (20%), houses (6%), small enemies (8%),
@@ -188,7 +188,7 @@ attack), speed, points. Defense 2 means it takes half damage and hits for 2.
 
 ### Room left
 
-About **7,840 of 8,192 tokens** are used: nearly full. A fourth kaiju or
+About **7,900 of 8,192 tokens** are used: nearly full. A fourth kaiju or
 more skills would mean trimming something first (there's room to: some
 helpers can be merged, and the title screen could get simpler). Ask me
 when you get there.

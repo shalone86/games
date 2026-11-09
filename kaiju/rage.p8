@@ -63,7 +63,7 @@ function start()
  pk=roster[sel]
  make_city()
  -- destroy mode: wreck half
- goal,nd=flr(nb*.5),0
+ goal,nd,tb=flr(nb*.5),0
  k={x=world/2,y=world/2,vx=0,vy=0,
   fx=1,fy=0,face=1,fr=0,z=0,
   hp=pk.hp,mhp=pk.hp,inv=0,en=60,bl=0,
@@ -476,6 +476,17 @@ function upd_play()
  upd_army()
  upd_fx()
  pickups()
+ -- destroy mode: find the
+ -- nearest building left
+ if gm==1 and tm%15==0 then
+  local bd=999
+  for _,b in pairs(gr) do
+   if b.k>0 and not b.dead then
+    local d=dist(b.x+8,b.y+8,k.x,k.y)
+    if d<bd then bd,tb=d,b end
+   end
+  end
+ end
 end
 
 function zmove()
@@ -979,11 +990,6 @@ function drw_bld(b)
  pal()
 end
 
--- draw a kaiju's frame f
-function kspr(f,x,y,flip)
- sspr(f%16*8,f\16*8,16,16,x,y,16,16,flip)
-end
-
 -- color swaps as "old,new,..."
 function tint(s)
  local p=split(s)
@@ -1071,6 +1077,19 @@ function oprint(s,x,y,c)
  print(s,x,y,c)
 end
 
+-- a marker on the edge of the
+-- screen pointing at a spot
+-- that's off screen
+function edge(wx,wy,c,s,o)
+ local rx,ry=wx-cx,wy-cy
+ if rx<0 or rx>127 or ry<8 or ry>118 then
+  local a=atan2(rx-64,ry-64)
+  local x,y=64+cos(a)*56,64+sin(a)*48
+  circfill(x,y,4,c)
+  print(s,x-o,y-2,7)
+ end
+end
+
 function drw_hud()
  rectfill(0,0,127,7,0)
  for i=1,k.mhp do
@@ -1094,13 +1113,12 @@ function drw_hud()
  -- arrow to the rival when
  -- it's off the screen
  if rival then
-  local rx,ry=rival.x-cx,rival.y-cy
-  if rx<0 or rx>127 or ry<8 or ry>118 then
-   local a=atan2(rx-64,ry-64)
-   local x,y=64+cos(a)*56,64+sin(a)*48
-   circfill(x,y,3,rival.run and 12 or 8)
-   print(rival.run and "+" or "!",x-1,y-2,7)
-  end
+  edge(rival.x,rival.y,rival.run and 12 or 8,rival.run and "+" or "!",1)
+ end
+ -- destroy mode: the nearest
+ -- building, when none is near
+ if tb and not tb.dead then
+  edge(tb.x+8,tb.y+8,9,"\138",3)
  end
 
  rectfill(0,119,127,127,0)
@@ -1111,7 +1129,8 @@ function drw_hud()
    local s=sk[id]
    circfill(x+3,123,2,s.c)
    print(s.n,x+7,121,s.c)
-   for j=1,k.lv[i] do pset(x+7+#s.n*4+j*2,123,7) end
+   -- level number (yellow = max)
+   print(k.lv[i],x+8+#s.n*4,121,k.lv[i]==3 and 10 or 7)
   else
    print("- empty",x+7,121,5)
   end
