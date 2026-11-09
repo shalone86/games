@@ -523,14 +523,14 @@ end
 function grab()
  local gx,gy=k.x+k.fx*10,k.y+k.fy*10-4
  for e in all(ens) do
-  if e.k<4 and abs(e.x-gx)<12 and abs(e.y-gy)<12 then
+  if e.k<4 and abs(e.x-gx)<16 and abs(e.y-gy)<16 then
    del(ens,e) addscore(et[e.k][6],e.x,e.y)
    k.held,k.hw=et[e.k][1],e.w
    sfx(3) return
   end
  end
- for b in all(near_b(gx,gy,12)) do
-  if b.k>0 and abs(b.x+8-gx)<12 and abs(b.y+8-gy)<12 then
+ for b in all(near_b(gx,gy,16)) do
+  if b.k>0 and abs(b.x+8-gx)<16 and abs(b.y+8-gy)<16 then
    k.held,k.hw=bspr[b.k+1],2
    smash(b) return
   end
@@ -538,7 +538,7 @@ function grab()
 end
 
 function throw()
- add(objs,{x=k.x,y=k.y,dx=k.fx*4,dy=k.fy*4,t=18,s=k.held,w=k.hw,r=16,d=3})
+ add(objs,{x=k.x,y=k.y,dx=k.fx*4,dy=k.fy*4,t=18,s=k.held,w=k.hw,r=18,d=5})
  k.held=nil sfx(6)
 end
 
