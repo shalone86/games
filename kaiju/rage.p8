@@ -771,22 +771,38 @@ end
 -->8
 -- effects + pickups
 
--- coins (half the time),
--- hearts, sometimes an orb
+-- coins, hearts, sometimes an
+-- orb (fewer once you have 2
+-- skills: they level faster
+-- now that they fly to you)
 function drop(x,y,po)
  local r=rnd()
  if r<.3 then add(drops,{x=x,y=y,s=41})
  elseif r<.36 then add(drops,{x=x,y=y,s=40}) end
- if rnd()<po then add(drops,{x=x,y=y+3,o=orb()}) end
+ if rnd()<po*(k.sl[2] and .15 or 1) then add(drops,{x=x,y=y+3,o=orb()}) end
 end
 
 function pickups()
+ k.ho=nil
+ -- the weaker skill (the older
+ -- one if they tie)
+ local o=k.lv[1]<=k.lv[2] and 1 or 2
  for d in all(drops) do
+  -- orbs for skills you have
+  -- fly to you
+  if d.o and has(d.o) and dist(d.x,d.y,k.x,k.y)<48 then
+   local a=atan2(k.x-d.x,k.y-4-d.y)
+   d.x+=cos(a)*2 d.y+=sin(a)*2
+  end
   if abs(d.x-k.x)<8 and abs(d.y-k.y+4)<8 then
-   if d.o then
+   d.h=(d.h or 0)+1
+   if d.o and k.sl[2] and k.lv[o]>1 and not has(d.o) and d.h<30 then
+    -- level 2+ skills are safe
+    -- unless you stand here
+    -- for a second
+    k.ho=d
+   elseif d.o then
     -- touch it, you take it
-    -- (dodge the ones you
-    -- don't want)
     del(drops,d) sfx(9)
     local i=has(d.o)
     if i then
@@ -795,11 +811,9 @@ function pickups()
      banner(sk[d.o].n.." level "..k.lv[i])
     else
      -- both full: it pushes out
-     -- the weaker skill (the
-     -- older one if they tie).
+     -- the weaker skill.
      -- slot 2 is always newest
      if k.sl[2] then
-      local o=k.lv[1]<=k.lv[2] and 1 or 2
       banner(sk[d.o].n.." for "..sk[k.sl[o]].n)
       if o==1 then
        k.sl[1],k.lv[1],k.tm[1]=k.sl[2],k.lv[2],k.tm[2]
@@ -817,6 +831,8 @@ function pickups()
      if k.rage>=36 then rampage() end
     end
    end
+  else
+   d.h=nil
   end
  end
 end
@@ -1021,6 +1037,12 @@ function drw_k()
   spr(k.held,k.x-k.hw*4,k.y-18-k.hw*8-k.z,k.hw,k.hw)
  end
  if k.shell>0 then circ(k.x,k.y-8-k.z,11,12) end
+ -- the bar for standing on
+ -- an orb to swap it in
+ if k.ho then
+  line(k.x+10,k.y,k.x+10,k.y-15,0)
+  line(k.x+10,k.y,k.x+10,k.y-k.ho.h/2,sk[k.ho.o].c)
+ end
  -- breath left, under the feet
  if k.en<60 then
   line(k.x-6,k.y+4,k.x-6+12*k.en/60,k.y+4,pk.bc)

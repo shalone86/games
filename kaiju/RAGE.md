@@ -78,9 +78,19 @@ themselves, no buttons. You start with the first one.
   its name, yellow at max). A new skill fills an empty slot, or else **pushes out your
   weaker skill** (the older one if they're tied), and a banner says what
   happened ("zap for gust").
+- **Level 2 and 3 skills are safe.** Once your weaker skill is level 2 or
+  more, touching a different orb does nothing by accident. To swap anyway,
+  **stand on the orb for one second**: a small bar in the orb's color climbs
+  beside you, and when it's full the swap happens. Walk off and it resets.
+- **Orbs for skills you already have fly to you** from about 3 houses away,
+  so a level-up is never lost in the crowd.
 - Orbs drop from offices and towers (20%), houses (6%), small enemies (8%),
   big enemies (60%), one near you every new wave, and always from a beaten
-  rival.
+  rival. Once you have two skills those chances drop to about a sixth
+  (`.15` in `drop()`, tab 5), because orbs that fly to you and skills that
+  can't be lost would otherwise level you twice as fast. Measured with a bot:
+  both skills reach level 3 at about the same time as before (a bit over
+  2 minutes).
 
 **Gora** (your list):
 
@@ -188,7 +198,7 @@ attack), speed, points. Defense 2 means it takes half damage and hits for 2.
 
 ### Room left
 
-About **7,900 of 8,192 tokens** are used: nearly full. A fourth kaiju or
+About **8,070 of 8,192 tokens** are used: nearly full. A fourth kaiju or
 more skills would mean trimming something first (there's room to: some
 helpers can be merged, and the title screen could get simpler). Ask me
 when you get there.
@@ -217,5 +227,8 @@ plays all three kaiju in both modes (grab, breath, the Z move, orbs, rage
 mode, the late waves) through to a win: the city destroyed, or the boss
 beaten. `kaiju/rage_shots.lua` retakes the screenshots and
 `kaiju/rage_sim.lua` (add `300` to the command) has a bot play whole games
-to check the pacing. The test scripts are kept tiny because the test runner adds
-its code to the cart, and the cart is near the token limit.
+to check the pacing, and `kaiju/rage_levels.lua` (add `580`) measures how
+fast skills level up. The test runner adds its code to the cart, and the
+cart is near the token limit, so a test's first line can say
+`-- stub: name name` to empty functions it doesn't need (only in the test
+copy, never in the cart).

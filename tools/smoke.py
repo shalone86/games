@@ -81,6 +81,11 @@ def main(cart, driver, wait=60):
     drv = open(driver).read()
     text = text.replace("__lua__\n", "__lua__\n", 1)
     parts = re.split(r"(\n__gfx__\n)", text, maxsplit=1)
+    # a driver line "-- stub: name name" empties those functions, to make
+    # room in carts near the 8192-token limit (never saved to the cart)
+    m = re.search(r"--\s*stub:\s*(.*)", drv)
+    for name in m.group(1).split() if m else []:
+        parts[0] = re.sub(r"^function %s\(.*?^end\n" % name, "function %s() end\n" % name, parts[0], count=1, flags=re.M | re.S)
     # carts near the 8192-token limit: only add shot() when it's used
     harness = HARNESS + (SHOT if "shot(" in drv else "")
     body = parts[0] + "\n-->8\n" + harness + "\n" + drv + "\nprinth('smoke: done')\n"
