@@ -1,4 +1,4 @@
--- stub: drw_title drw_over upd_title
+-- stub: drw_title drw_over upd_title bolt rainbow edge
 -- every kaiju in both modes: grab, breath, z move, orbs,
 -- rage, late waves, then a win (city / boss).
 -- (kept tiny: the cart is near the token limit)

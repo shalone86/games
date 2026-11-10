@@ -1,4 +1,4 @@
--- stub: drw_title drw_over drw_hud drw_play drw_bld drw_e drw_k bolt
+-- stub: drw_title drw_over drw_hud drw_play drw_bld drw_e drw_k bolt upd_title
 -- a bot wanders through 12 survive games (it can't die and doesn't chase
 -- orbs) to measure how fast skills level up: seconds until slot 2 fills,
 -- until the first level 2, the first level 3, and both skills at level 3.

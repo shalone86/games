@@ -67,7 +67,7 @@ function start()
  k={x=world/2,y=world/2,vx=0,vy=0,
   fx=1,fy=0,face=1,fr=0,z=0,
   hp=pk.hp,mhp=pk.hp,inv=0,en=60,bl=0,
-  dash=0,dcd=0,fly=0,jcd=0,zt=0,xt=0,
+  dash=0,fly=0,zc=1,zp=1,sq=0,zt=0,xt=0,
   rage=0,rg=0,shell=0,ang=0,
   -- 2 skill slots: skill,
   -- level, timer
@@ -95,7 +95,7 @@ function over(w)
 end
 
 -- x hold: breath
--- z: dash or leap
+-- z: stomp, dash or fly
 -- z+x together: grab
 -- holding something: any
 --  button throws it
@@ -126,15 +126,16 @@ end
 -->8
 -- kaiju + their skills
 
--- z: dash (walkers) or leap
--- (flyers). sp = first sprite
+-- z: stomp, dash or fly.
+-- zr: how fast z charges back
+-- (1/frames). sp = first sprite
 -- (walk 1, walk 2, attack).
 -- bc = breath color.
 -- sk = its 5 skills below
 roster={
- {n="gora",d="big lizard",z="dash",sp=0,hp=10,spd=1.2,bc=12,sk=split"1,2,3,4,5"},
- {n="luna",d="giant moth",z="fly",sp=64,hp=8,spd=1.35,bc=10,sk=split"6,7,8,9,10"},
- {n="korax",d="spiked tank",z="dash",sp=70,hp=13,spd=1.05,bc=9,sk=split"11,12,13,14,15"},
+ {n="gora",d="big lizard",z="stomp",zr=.02,sp=0,hp=10,spd=1.2,bc=12,sk=split"1,2,3,4,5"},
+ {n="luna",d="giant moth",z="fly",zr=.008,sp=64,hp=8,spd=1.35,bc=10,sk=split"6,7,8,9,10"},
+ {n="korax",d="spiked tank",z="dash",zr=.025,sp=70,hp=13,spd=1.05,bc=9,sk=split"11,12,13,14,15"},
 }
 
 -- each skill: name, orb color,
@@ -156,7 +157,8 @@ sk={
   sfx(1)
   return 80-l*15
  end},
- {n="stomp",c=4,f=function(l)
+ -- a tail sweep all around
+ {n="tail",c=4,f=function(l)
   nova(14+l*6,1+l,4) return 110-l*20
  end},
  -- dizzy enemies wander and
@@ -449,8 +451,8 @@ function upd_play()
  k.vx,k.vy=ix*s,iy*s
 
  buttons()
- k.dcd=max(k.dcd-1,0)
- k.jcd=max(k.jcd-1,0)
+ -- z charges back on the ground
+ if k.z+k.dash==0 then k.zc=min(k.zc+pk.zr,1) end
  if k.dash>0 then
   k.dash-=1 k.safe,k.atk=true,true
   k.vx,k.vy=k.fx*3.5,k.fy*3.5
@@ -462,12 +464,13 @@ function upd_play()
  elseif k.z>0 then
   k.z=max(k.z-6,0)
   if k.z==0 then
-   k.jcd=90
-   local b=bump(k.x,k.y)
+   -- landing: as strong as
+   -- the charge it started with
+   local b,p=bump(k.x,k.y),k.zp
    while b do smash(b) b=bump(k.x,k.y) end
-   hit(k.x,k.y,22,3)
-   ring(k.x,k.y,26,7) ring(k.x,k.y,16,10)
-   shake,stop=6,3 sfx(0)
+   hit(k.x,k.y,22*p,3*p)
+   ring(k.x,k.y,26*p,7) ring(k.x,k.y,16*p,10)
+   shake,stop,k.sq=6*p,3,6 sfx(0)
   end
  end
 
@@ -489,18 +492,21 @@ function upd_play()
  end
 end
 
+-- z works any time, but only
+-- as strong as its charge
+-- (at least 30%), so using it
+-- again too soon is weaker.
+-- fly: z takes off, z again
+-- (or running out) dives down.
+-- stomp: a little hop + slam
 function zmove()
- if pk.z=="dash" then
-  if k.dcd==0 and k.z==0 then
-   k.dash,k.dcd=10,40 sfx(6)
-  end
- -- fly: z takes off, z again
- -- (or running out) dives down
- -- and stomps. then a 3 s wait
- elseif k.fly>0 then k.fly=0
- elseif k.jcd==0 and k.z==0 then
-  k.fly=150 sfx(6)
- end
+ if k.fly>0 then k.fly=0 return end
+ if k.z+k.dash>0 then return end
+ local p,z=.3+k.zc*.7,pk.z
+ k.zp,k.zc=p,0
+ if z=="dash" then k.dash=flr(10*p)
+ else k.fly=flr(z=="fly" and 90*p or 2+4*p) end
+ sfx(6)
 end
 
 function breath()
@@ -771,14 +777,16 @@ end
 -->8
 -- effects + pickups
 
--- coins, hearts, sometimes an
+-- coins (twice as many in
+-- destroy mode: it's shorter),
+-- hearts, sometimes an
 -- orb (fewer once you have 2
 -- skills: they level faster
 -- now that they fly to you)
 function drop(x,y,po)
  local r=rnd()
- if r<.3 then add(drops,{x=x,y=y,s=41})
- elseif r<.36 then add(drops,{x=x,y=y,s=40}) end
+ if r<.6/gm then add(drops,{x=x,y=y,s=41})
+ elseif r>.94 then add(drops,{x=x,y=y,s=40}) end
  if rnd()<po*(k.sl[2] and .15 or 1) then add(drops,{x=x,y=y+3,o=orb()}) end
 end
 
@@ -1019,18 +1027,22 @@ function drw_k()
  ovalfill(k.x-6,k.y-2,k.x+6,k.y+2,1)
  if k.inv%4<2 then
   if k.tint then tint(stone) end
-  local w=16
+  local w,h=16,16
   if k.rg>0 then
    -- rage mode: big, glowing,
    -- every color of the rainbow
-   w=24
+   w,h=24,24
    fillp(0b0101101001011010.1)
    circfill(k.x,k.y-12-k.z,15+sin(t()*2)*2,10)
    fillp()
    if k.rg>60 or t()*6%2<1 then rainbow() end
   elseif k.safe then tint(gold) end
+  -- squash landing, stretch
+  -- going up
+  if k.sq>0 then k.sq-=1 w+=6 h-=5
+  elseif k.fly>0 then w-=2 h+=3 end
   local f=pk.sp+(k.atk and 4 or flr(k.fr)%2*2)
-  sspr(f%16*8,f\16*8,16,16,k.x-w/2,k.y-w-k.z,w,w,k.face<0)
+  sspr(f%16*8,f\16*8,16,16,k.x-w/2,k.y-h-k.z,w,h,k.face<0)
   pal()
  end
  if k.held then
@@ -1041,11 +1053,17 @@ function drw_k()
  -- an orb to swap it in
  if k.ho then
   line(k.x+10,k.y,k.x+10,k.y-15,0)
-  line(k.x+10,k.y,k.x+10,k.y-k.ho.h/2,sk[k.ho.o].c)
+  local s=sk[k.ho.o]
+  line(k.x+10,k.y,k.x+10,k.y-k.ho.h/2,s.c)
+  oprint(s.n.."?",k.x+13,k.y-12,s.c)
  end
  -- breath left, under the feet
  if k.en<60 then
   line(k.x-6,k.y+4,k.x-6+12*k.en/60,k.y+4,pk.bc)
+ end
+ -- z charging back
+ if k.zc<1 then
+  line(k.x-6,k.y+6,k.x-6+12*k.zc,k.y+6,11)
  end
 end
 
@@ -1164,9 +1182,6 @@ function drw_hud()
  if k.rg>210 then
   oprint("\^w\^trage mode!",24,40+sin(t()*2)*3,8+t()*15%7)
  end
- -- z move ready?
- local rdy=k.dcd==0 and k.jcd==0
- print("z",121,121,rdy and 11 or 5)
 
  if k.held then print("throw: z or x",38,112,10) end
  if bt>0 then
