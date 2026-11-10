@@ -6,7 +6,7 @@ Shalone Cason's PICO-8 games and learning carts.
 |---|---|
 | [`cookbook/`](cookbook/COOKBOOK.md) | **PICO-8 Cookbook**: 19 small playable recipes (moving, collisions, jumping, aiming, camera, juice, sound, saving, number traps…) and a guide for learning and teaching them |
 | [`kaiju/`](kaiju/WORKSHOP.md) | **Kaiju Workshop**: one monster game played six ways, three with attack buttons and three without, to find the most fun one |
-| [`kaiju/rage.p8`](kaiju/RAGE.md) | **Kaiju Rage** (working title): the real game. Breath, stomp/dash/fly, Z+X grab and throw, per-kaiju skill orbs, a rage meter, a rival kaiju, big enemies and mechs |
+| [`kaiju/rage.p8`](kaiju/RAGE.md) | **Kaiju Rage** (working title): the real game. Four kaiju (one a hero robot), breath, stomp/dash/fly/jet, Z+X grab and throw, per-kaiju skill orbs, a rage meter, a rival kaiju, big enemies and mechs |
 | [`kaiju/ART_CHECKLIST.md`](kaiju/ART_CHECKLIST.md) | every sprite and sound to draw for Kaiju Rage |
 | [`angels/`](angels/IDEAS.md) | notes for the next game: angels lighting up the city |
 | `tools/` | helpers: stand-in art, token count, headless test runs, screenshots |

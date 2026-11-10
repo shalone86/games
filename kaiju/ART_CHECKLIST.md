@@ -38,6 +38,9 @@ sprite 0 also covers 1, 16 and 17).
 - [ ] **70** Korax: walk 1
 - [ ] **72** Korax: walk 2
 - [ ] **74** Korax: attacking
+- [ ] **100** D-Tron: walk 1
+- [ ] **102** D-Tron: walk 2
+- [ ] **104** D-Tron: attacking (arm out, firing the beam)
 
 (The rival is one of these, tinted purple; no extra drawing needed.)
 
@@ -101,4 +104,4 @@ match.
 
 - [ ] Title / cart picture: run the game, press **F7** on a nice moment to
   capture the cart's label.
-- [ ] Final names for the game and the three kaiju (tab 1, `roster`).
+- [ ] Final names for the game and the kaiju (tab 1, `roster`: the first word of each line).

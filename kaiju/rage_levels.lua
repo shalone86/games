@@ -4,7 +4,7 @@
 -- until the first level 2, the first level 3, and both skills at level 3.
 -- run: python3 tools/smoke.py kaiju/rage.p8 kaiju/rage_levels.lua 500
 s={0,0,0,0}
-for r=1,4 do for c=1,3 do
+for r=1,3 do for c=1,4 do
  sel,gm=c,2 start() local t={}
  for f=1,5400 do
   local tx,ty=k.x+cos(f/400)*60,k.y+sin(f/530)*60

@@ -64,14 +64,13 @@ function start()
  make_city()
  -- destroy mode: wreck half
  goal,nd,tb=flr(nb*.5),0
- k={x=world/2,y=world/2,vx=0,vy=0,
-  fx=1,fy=0,face=1,fr=0,z=0,
-  hp=pk.hp,mhp=pk.hp,inv=0,en=60,bl=0,
-  dash=0,fly=0,zc=1,zp=1,sq=0,zt=0,xt=0,
-  rage=0,rg=0,shell=0,ang=0,
-  -- 2 skill slots: skill,
-  -- level, timer
-  sl={pk.sk[1]},lv={1,0},tm={0,0}}
+ -- you (written as text to
+ -- save tokens, see tbl)
+ k=tbl[[x,y,vx,vy,fx,fy,face,fr,z,inv,en,bl,dash,fly,zc,zp,sq,zt,xt,rage,rg,shell,ang
+192,192,0,0,1,0,1,0,0,0,60,0,0,0,1,1,0,0,0,0,0,0,0]][1]
+ -- 2 skill slots: skill,
+ -- level, timer
+ k.hp,k.mhp,k.sl,k.lv,k.tm=pk.hp,pk.hp,{pk.sk[1]},{1,0},{0,0}
  ens,shots,fx,pops,drops,objs,clouds,bolts={},{},{},{},{},{},{},{}
  score,tm,secs,shake,stop,bt,flash=0,0,0,0,0,0,0
  spawn_t,wave,rt,rival,dm=60,1,gm==1 and 300 or 750,nil,1
@@ -88,14 +87,14 @@ function over(w)
  -- bonus for beating the boss
  if w then score=min(score+(gm==1 and max(0,300-secs)*5 or 100),32000)
  else boom(k.x,k.y-8,40) end
- -- best scores: slots 4-6
- -- destroy, 7-9 survive
- best=dget(sel+gm*3)
- if score>best then dset(sel+gm*3,score) end
+ -- best scores: slots 5-8
+ -- destroy, 9-12 survive
+ best=dget(sel+gm*4)
+ if score>best then dset(sel+gm*4,score) end
 end
 
 -- x hold: breath
--- z: stomp, dash or fly
+-- z: stomp, dash, fly or jet
 -- z+x together: grab
 -- holding something: any
 --  button throws it
@@ -126,68 +125,92 @@ end
 -->8
 -- kaiju + their skills
 
--- z: stomp, dash or fly.
--- zr: how fast z charges back
--- (1/frames). sp = first sprite
--- (walk 1, walk 2, attack).
--- bc = breath color.
--- sk = its 5 skills below
-roster={
- {n="gora",d="big lizard",z="stomp",zr=.02,sp=0,hp=10,spd=1.2,bc=12,sk=split"1,2,3,4,5"},
- {n="luna",d="giant moth",z="fly",zr=.008,sp=64,hp=8,spd=1.35,bc=10,sk=split"6,7,8,9,10"},
- {n="korax",d="spiked tank",z="dash",zr=.025,sp=70,hp=13,spd=1.05,bc=9,sk=split"11,12,13,14,15"},
-}
+-- turns a table written as
+-- text into a list of tables:
+-- the first line names the
+-- fields, each line after is
+-- one thing. (a whole string
+-- is 1 token, a table like
+-- {n="gora",hp=10} is 7)
+function tbl(s)
+ local r,h={}
+ for l in all(split(s,"\n")) do
+  local v,o=split(l),{}
+  if h then
+   for i,n in pairs(h) do o[n]=v[i] end
+   add(r,o)
+  else h=v end
+ end
+ return r
+end
 
--- each skill: name, orb color,
--- f(level): fires, returns
---  frames until it fires again
--- p(level): every frame
--- d(level): extra drawing
-sk={
- -- gora
- {n="flame",c=9,f=function(l)
-  local e=near(56)
-  if not e then return 10 end
-  local a=atan2(e.x-k.x,e.y-k.y+6)
-  for i=6,30+l*10,5 do
-   local x,y=k.x+cos(a)*i,k.y-6+sin(a)*i
-   hit(x,y,2+l,1)
-   add(fx,{x=x,y=y,dx=rnd()-.5,dy=-rnd(),t=8+rnd(8),c=rnd(split"8,9,10")})
-  end
-  sfx(1)
-  return 80-l*15
- end},
- -- a tail sweep all around
- {n="tail",c=4,f=function(l)
-  nova(14+l*6,1+l,4) return 110-l*20
- end},
- -- dizzy enemies wander and
- -- shoot the wrong way
- {n="roar",c=13,f=function(l)
-  dizzy(40+l*12,90+l*30) return 240-l*30
- end},
- -- stone skin: takes less damage
- {n="hide",c=6,p=function(l)
-  k.arm*=1-l*.2 k.tint=true
- end},
- -- heals, but slower and
- -- takes more damage
- {n="rejuv",c=11,p=function(l)
-  k.reg+=.005*l k.spm*=.8 k.arm*=1.5
- end},
- -- luna
- {n="gust",c=7,f=function(l)
-  local r=36+l*8
-  for e in all(ens) do
-   if dist(e.x,e.y,k.x,k.y)<r then push(e,20) end
-  end
-  for s in all(shots) do
-   if dist(s.x,s.y,k.x,k.y)<r then del(shots,s) end
-  end
-  ring(k.x,k.y-6,r,7) sfx(6)
-  return 150-l*25
- end},
- {n="spores",c=14,p=function(l)
+-- n name, d what it is
+-- z: stomp, dash, fly or jet
+-- zr: how fast z charges back
+-- zt: frames up for fly/jet
+-- sp: first sprite (walk 1,
+--  walk 2, attack)
+-- spd speed, bc breath color
+roster=tbl[[n,d,z,zr,zt,sp,hp,spd,bc
+gora,big lizard,stomp,.02,7,0,10,1.2,12
+luna,giant moth,fly,.008,90,64,8,1.35,10
+korax,spiked tank,dash,.025,0,70,13,1.05,9
+d-tron,hero robot,jet,.016,45,100,11,1.15,7]]
+-- each kaiju's 5 skills come
+-- in order: 1-5 are gora's,
+-- 6-10 luna's...
+for i,r in pairs(roster) do
+ r.sk={}
+ for j=1,5 do add(r.sk,i*5-5+j) end
+end
+
+-- every skill: name, orb color,
+-- a: what it does (see fire()
+--  and skill() below),
+-- cd: frames between uses,
+--  cl less each level,
+-- r: size/reach, rl more each
+--  level, d: damage (or how
+--  long), dl more each level,
+-- x: extra (how many)
+sk=tbl[[n,c,a,cd,cl,r,rl,d,dl,x
+flame,9,ray,80,15,30,10,1,0,0
+tail,4,nova,110,20,14,6,1,1,0
+roar,13,dizzy,240,30,40,12,90,30,0
+hide,6,pass,0,0,1,-.2,1,0,0
+rejuv,11,pass,0,0,1.5,0,.8,.005,0
+gust,7,gust,150,25,36,8,20,0,0
+spores,14,orbit,0,0,0,0,1,0,0
+zap,12,zap,50,10,0,0,1,.5,0
+dust,10,dust,70,0,10,3,90,30,0
+cocoon,11,pass,0,0,1,0,1,.012,1
+spikes,6,spikes,70,0,0,0,1,0,4
+quake,4,nova,160,20,28,8,2,0,0
+shell,12,shell,300,40,0,0,45,20,0
+thorns,3,thorn,0,0,0,0,0,0,0
+rock,9,lob,90,10,12,4,1,1,0
+beam,12,ray,60,10,40,12,1,0,0
+punch,8,lob,120,20,16,4,2,1,0
+missile,9,lob,90,10,8,0,1,0,1
+barrier,10,shell,360,40,0,0,60,20,0
+repair,11,pass,0,0,1,0,1,.004,0]]
+
+-- every frame, for each skill
+-- you have (i = its slot)
+function skill(s,l,i)
+ local a=s.a
+ if a=="pass" then
+  -- always on: armor (hide
+  -- turns you to stone), speed,
+  -- healing (x=1: only while
+  -- standing still)
+  k.arm*=s.r+s.rl*l k.spm*=s.d
+  if s.x==0 or k.vx==0 and k.vy==0 then k.reg+=s.dl*l end
+  if s.rl<0 then k.tint=true end
+ elseif a=="thorn" then k.thorn=l
+ elseif a=="orbit" then
+  -- spores circle you, chew
+  -- buildings, block shots
   k.ang+=.012
   for i=0,l do
    local x,y=orbit(i,l+1)
@@ -196,55 +219,78 @@ sk={
     if abs(s.x-x)<5 and abs(s.y-y)<5 then del(shots,s) end
    end
   end
- end,d=function(l)
-  for i=0,l do
-   local x,y=orbit(i,l+1)
-   circfill(x,y,2,14) pset(x,y,7)
+ else
+  k.tm[i]-=1
+  if k.tm[i]<=0 then k.tm[i]=fire(s,l) end
+ end
+end
+
+-- a skill goes off. returns
+-- the frames until next time
+function fire(s,l)
+ local a,r,d=s.a,s.r+s.rl*l,s.d+s.dl*l
+ if a=="nova" then
+  -- a shockwave around you
+  nova(r,d,s.c) shake=r/8
+ elseif a=="dizzy" then
+  -- enemies wander and shoot
+  -- the wrong way
+  dizzy(r,d)
+ elseif a=="shell" then
+  -- can't be hurt for a bit
+  k.shell=d sfx(9)
+ elseif a=="dust" then
+  -- a cloud that hurts
+  add(clouds,{x=k.x,y=k.y,t=d,r=r})
+ elseif a=="gust" then
+  -- pushes enemies away and
+  -- blows shots away
+  for e in all(ens) do
+   if dist(e.x,e.y,k.x,k.y)<r then push(e,d) end
   end
- end},
- {n="zap",c=12,f=function(l)
-  local e=near(70)
-  if not e then return 10 end
-  add(bolts,{x=e.x,y=e.y,t=5})
-  hit(e.x,e.y,3,1+l\2,true) sfx(1)
-  return 50-l*10
- end},
- -- leaves a cloud that hurts
- -- what's inside it
- {n="dust",c=10,f=function(l)
-  add(clouds,{x=k.x,y=k.y,t=90+l*30,r=10+l*3})
-  return 70
- end},
- -- heals while standing still
- {n="cocoon",c=11,p=function(l)
-  if k.vx==0 and k.vy==0 then k.reg+=.012*l end
- end},
- -- korax
- {n="spikes",c=6,f=function(l)
-  for i=1,l*4 do
-   local a=i/(l*4)+k.ang
-   add(objs,{x=k.x,y=k.y-4,dx=cos(a)*3,dy=sin(a)*3,t=15,r=3,d=1})
+  for b in all(shots) do
+   if dist(b.x,b.y,k.x,k.y)<r then del(shots,b) end
+  end
+  ring(k.x,k.y-6,r,7) sfx(6)
+ elseif a=="spikes" then
+  -- a ring of spikes
+  local n=s.x*l
+  for i=1,n do
+   local b=i/n+k.ang
+   add(objs,{x=k.x,y=k.y-4,dx=cos(b)*3,dy=sin(b)*3,t=15,r=3,d=d})
   end
   k.ang+=.06 sfx(7)
-  return 70
- end},
- {n="quake",c=4,f=function(l)
-  nova(28+l*8,2,4) shake=5 return 160-l*20
- end},
- -- can't be hurt for a moment
- {n="shell",c=12,f=function(l)
-  k.shell=45+l*20 sfx(9) return 300-l*40
- end},
- -- getting hit hurts them back
- {n="thorns",c=3,p=function(l) k.thorn=l end},
- {n="rock",c=9,f=function(l)
+ else
+  -- the rest aim at the
+  -- nearest enemy
   local e=near(80)
   if not e then return 10 end
-  add(objs,{x=k.x,y=k.y,dx=(e.x-k.x)/20,dy=(e.y-k.y)/20,t=20,r=12+l*4,d=1+l})
-  sfx(6)
-  return 90-l*10
- end},
-}
+  if a=="zap" then
+   add(bolts,{x=e.x,y=e.y,t=5})
+   hit(e.x,e.y,3,d,true) sfx(1)
+  elseif a=="ray" then
+   -- flame, beam: a line of
+   -- hits r long
+   local b=atan2(e.x-k.x,e.y-k.y+6)
+   for i=6,r,5 do
+    local x,y=k.x+cos(b)*i,k.y-6+sin(b)*i
+    hit(x,y,2+l,d)
+    add(fx,{x=x,y=y,dx=rnd()-.5,dy=-rnd(),t=8+rnd(8),c=rnd{s.c,7,10}})
+   end
+   sfx(1)
+  else
+   -- lob: rock, punch, missiles
+   -- (x*level of them, or 1).
+   -- they land on it and blow
+   -- up r wide
+   for i=1,max(1,s.x*l) do
+    add(objs,{x=k.x,y=k.y,dx=(e.x-k.x+rnd(i*12-12))/20,dy=(e.y-k.y+rnd(i*12-12))/20,t=20,r=r,d=d,c=s.c})
+   end
+   sfx(6)
+  end
+ end
+ return s.cd-s.cl*l
+end
 
 -- skill helpers
 function near(r)
@@ -414,12 +460,7 @@ function upd_play()
  for i=1,2 do
   local id=k.sl[i]
   if id then
-   local s,l=sk[id],k.lv[i]
-   if s.p then s.p(l) end
-   if s.f then
-    k.tm[i]-=1
-    if k.tm[i]<=0 then k.tm[i]=s.f(l) end
-   end
+   skill(sk[id],k.lv[i],i)
   end
  end
  if k.shell>0 then k.shell-=1 k.safe=true end
@@ -497,16 +538,17 @@ end
 -- as strong as its charge
 -- (at least 30%), so using it
 -- again too soon is weaker.
--- fly: z takes off, z again
--- (or running out) dives down.
--- stomp: a little hop + slam
+-- fly, jet: z takes off, z
+-- again (or running out) dives
+-- down. stomp: a hop + slam.
+-- zt (roster): frames up
 function zmove()
  if k.fly>0 then k.fly=0 return end
  if k.z+k.dash>0 then return end
  local p,z=.3+k.zc*.7,pk.z
  k.zp,k.zc=p,0
  if z=="dash" then k.dash=flr(10*p)
- else k.fly=flr(z=="fly" and 90*p or 2+4*p) end
+ else k.fly=flr(pk.zt*p) end
  sfx(6)
 end
 
@@ -963,7 +1005,7 @@ function drw_play()
  for e in all(ens) do drw_e(e) end
  for o in all(objs) do
   if o.s then spr(o.s,o.x-o.w*4,o.y-o.w*4-6,o.w,o.w)
-  elseif o.r>4 then circfill(o.x,o.y-4,3,4) circ(o.x,o.y-4,3,5)
+  elseif o.r>4 then circfill(o.x,o.y-4,3,o.c or 4) circ(o.x,o.y-4,3,5)
   else line(o.x,o.y,o.x-o.dx,o.y-o.dy,7) end
  end
  for s in all(shots) do
@@ -986,7 +1028,13 @@ function drw_play()
  end
  for i=1,2 do
   local id=k.sl[i]
-  if id and sk[id].d then sk[id].d(k.lv[i]) end
+  -- spores
+  if id and sk[id].a=="orbit" then
+   for j=0,k.lv[i] do
+    local x,y=orbit(j,k.lv[i]+1)
+    circfill(x,y,2,14) pset(x,y,7)
+   end
+  end
  end
  for b in all(bolts) do
   bolt(k.x+k.face*6,k.y-12,b.x,b.y)
@@ -1224,11 +1272,11 @@ function drw_title()
  end
  oprint("kaiju rage",44,3,8)
  for i=1,#roster do
-  local r,x=roster[i],(i-1)*42+5
-  if i==sel then rect(x-2,12,x+36,52,10) end
+  local r,x=roster[i],i*32-30
+  if i==sel then rect(x-1,12,x+28,52,10) end
   local f=r.sp+(i==sel and flr(t()*4)%2*2 or 0)
-  sspr(f%16*8,f\16*8,16,16,x+2,14,32,32)
-  print(r.n,x+18-#r.n*2,46,i==sel and 10 or 6)
+  sspr(f%16*8,f\16*8,16,16,x+2,16,24,24)
+  print(r.n,x+14-#r.n*2,45,i==sel and 10 or 6)
  end
  local r=roster[sel]
  print(r.d.."   z: "..r.z,4,57,7)
@@ -1240,7 +1288,7 @@ function drw_title()
   circfill(x+2,y+2,2,s.c)
   print(s.n,x+7,y,s.c)
  end
- print("best "..pts(dget(sel+gm*3)),4,102,6)
+ print("best "..pts(dget(sel+gm*4)),4,102,6)
  oprint("\148\131 "..(gm==1 and "destroy the city" or "survive 8 waves"),4,111,10)
  print("\139\145 choose  z: go",56,102,6)
 end
@@ -1294,21 +1342,21 @@ d666666d8888888c8888888c009aa900a96666e003bbb300cccccccc01cccc10088888800aaaa9a0
 00000000000000000000000000000000000000000000000000550000055000000005500055000000005500000550000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000666666000000000066666600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000066666cc60000000066666cc60000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00006666666600000000666666660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00550566665055000055056666505500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-05665666666566500566566666656650000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-05665669665666500566566966566650000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-05650666666056500565066666605650000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-05500666666005500550066666600550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000555555000000000055555500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000660066000000000660000660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000660066000000000660000660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000550055000000000550000550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00006660066600000006660000666000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00006660066600000006660000666000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000666666000000000066666600000000000056000000000000005600000000000000560000000000000000000000000000000000000000000000000000000
+000066666cc60000000066666cc60000000000596500000000000059650000000000005965000000000000000000000000000000000000000000000000000000
+00006666666600000000666666660000000005666650000000000566665000000000056666500000000000000000000000000000000000000000000000000000
+00550566665055000055056666505500000006a66a600000000006a66a600000000006a66a600000000000000000000000000000000000000000000000000000
+05665666666566500566566666656650000005966950000000000596695000000000059669500000000000000000000000000000000000000000000000000000
+056656696656665005665669665666500005556cc65550000005556cc65550000005556cc6555000000000000000000000000000000000000000000000000000
+056506666660565005650666666056500059966cc66995000059966cc6699500005996699669999a000000000000000000000000000000000000000000000000
+05500666666005500550066666600550006906999960960000690699996096000069069999660000000000000000000000000000000000000000000000000000
+00000555555000000000055555500000006606666660660000660666666066000066066666600000000000000000000000000000000000000000000000000000
+00000660066000000000660000660000005005999950050000500599995005000050059999500000000000000000000000000000000000000000000000000000
+00000660066000000000660000660000000006600660000000000660066000000000066006600000000000000000000000000000000000000000000000000000
+00000550055000000000550000550000000009900990000000009900009900000000099009900000000000000000000000000000000000000000000000000000
+00006660066600000006660000666000000006600660000000006600006600000000066006600000000000000000000000000000000000000000000000000000
+00006660066600000006660000666000000056600665000000056600006650000000566006650000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000055500555000000055500005550000000555005550000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

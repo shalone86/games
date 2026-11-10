@@ -2,7 +2,7 @@
 -- every kaiju in both modes: grab, breath, z move, orbs,
 -- rage, late waves, then a win (city / boss).
 -- (kept tiny: the cart is near the token limit)
-for c=1,3 do for m=1,2 do
+for c=1,4 do for m=1,2 do
  sel,gm=c,m start() frames(80)
  press(4,5) frames(2) press(1,5) frames(30) press(4) frames(3) press() frames(20)
  k.rage=35 add(drops,{x=k.x,y=k.y,s=41}) add(drops,{x=k.x,y=k.y,o=pk.sk[3]}) frames(60)

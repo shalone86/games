@@ -12,7 +12,7 @@ run
 
 ![kaiju rage](shots/rage_sheet.png)
 
-All art and sounds are stand-ins; the names (Gora, Luna, Korax) are
+All art and sounds are stand-ins; the names (Gora, Luna, Korax; D-Tron is yours) are
 placeholders too. They're original on purpose: Godzilla, Mothra and the
 others are trademarks, so the shipped game needs its own monsters.
 
@@ -64,6 +64,8 @@ charge takes about 2 s (Gora), 1⅓ s (Korax), 4 s (Luna).
   that's a sprite to add later.
 - **Dash** (Korax): quick burst, can't be hurt, 3 damage to buildings in the
   way (towers stop you).
+- **Jet** (D-Tron): like fly, but short hops of up to 1½ s that charge back
+  twice as fast.
 - **Fly** (Luna): Z takes off; fly over everything for up to 3 s. Tanks,
   bombs, punches and the rival's bite can't reach you up there, but
   **missiles and the rival's fire can**. Z again (or running out of time)
@@ -76,9 +78,11 @@ charge takes about 2 s (Gora), 1⅓ s (Korax), 4 s (Luna).
 | 1 | **Gora**, big lizard | stomp | 10 | medium | flame, tail, roar, hide, rejuv |
 | 2 | **Luna**, giant moth | fly | 8 | fast | gust, spores, zap, dust, cocoon |
 | 3 | **Korax**, spiked tank | dash | 13 | slow | spikes, quake, shell, thorns, rock |
+| 4 | **D-Tron**, hero robot | jet | 11 | medium | beam, punch, missile, barrier, repair |
 
-Each one's Z move is `z="stomp"`, `"dash"` or `"fly"` in the roster (tab 1),
-one word to change; `zr` is how fast it charges back.
+Each one's Z move is `stomp`, `dash`, `fly` or `jet` in the roster (tab 1),
+one word to change; `zr` is how fast it charges back and `zt` how long it
+stays up. D-Tron's breath (X) is white, so it reads as a beam.
 
 ## Skill orbs (the survivor part)
 
@@ -124,6 +128,11 @@ still).
 shockwave) · shell (can't be hurt for 2–3½ s, every 6–9 s) · thorns
 (getting hit blasts everything around you) · rock (lobs a boulder at the
 nearest enemy).
+
+**D-Tron:** beam (a long laser line at the nearest enemy) · punch (a rocket
+fist that flies at the nearest enemy and blows up) · missile (1, 2, then 3
+at once) · barrier (can't be hurt for 2½–4 s, every 10–11 s) · repair (heals
+over time, no slowdown).
 
 ## Rage mode
 
@@ -191,20 +200,53 @@ Best score saves per kaiju and mode.
 | tab | what |
 |---|---|
 | 0 | setup, title/play/over, **`buttons()`** (all of the Z / X / Z+X logic) |
-| 1 | **`roster`** (the kaiju) and **`sk`** (the 15 skills), skill helpers |
+| 1 | `tbl()`, **`roster`** (the kaiju) and **`sk`** (the 20 skills), `skill()` and `fire()` (what skills do), helpers |
 | 2 | the city, `hit()` (all damage goes through it) |
 | 3 | `upd_play` (skills each frame, rage mode, dash, fly, stomp), `zmove`, breath, grab/throw, `hurt` |
 | 4 | `et` (enemy stats), `pick()` (which enemy each wave), enemies, bombs, **`rival_ai`** |
 | 5 | drops (coins, hearts, orbs), pickups, thrown things, effects |
 | 6 | drawing, HUD, title |
 
+### How the kaiju and skills are written (tab 1)
+
+The roster and all 20 skills are **tables written as text**: one line per
+kaiju or skill, with the field names on the first line. `tbl()` turns the
+text into tables. PICO-8 counts a whole string as 1 token, so this is much
+cheaper than writing `{n="gora",hp=10,...}`, and it's easy to read and edit.
+
+Each skill line is: name, orb color, **what it does** (`a`), cooldown and
+how much shorter each level (`cd`, `cl`), size and how much bigger each level
+(`r`, `rl`), damage or time and how much more each level (`d`, `dl`), and an
+extra number (`x`). What it does is one of the shared actions:
+
+| `a` | does | used by |
+|---|---|---|
+| `ray` | a line of hits toward the nearest enemy, `r` long | flame, beam |
+| `nova` | a shockwave around you, `r` wide | tail, quake |
+| `lob` | thrown at the nearest enemy, blows up `r` wide; `x` = how many per level (0 = one) | rock, punch, missile |
+| `zap` | lightning on the nearest enemy | zap |
+| `spikes` | `x` per level, out in every direction | spikes |
+| `dizzy` | enemies near you wander for `d` frames | roar |
+| `gust` | pushes enemies `d` away, blows away shots | gust |
+| `dust` | a cloud that hurts, `d` frames | dust |
+| `shell` | can't be hurt for `d` frames | shell, barrier |
+| `pass` | always on: armor ×(`r`+`rl`×level), speed ×`d`, heals `dl`×level a frame (`x`=1: only standing still) | hide, rejuv, cocoon, repair |
+| `orbit` | spores circling you | spores |
+| `thorn` | getting hit blasts everything near | thorns |
+
+So a new skill that works like an old one is **just a new line of numbers**.
+A new kind of action is a new `elseif` in `fire()` (or `skill()` for
+always-on ones).
+
 ### Adding a kaiju
 
 1. Draw 3 sprites of 16 × 16 next to each other (walk 1, walk 2, attack) in a
-   free spot, e.g. sprite 100.
-2. Add 5 skills to the end of `sk` (copy any; `f` fires and returns the
-   frames until the next time, `p` runs every frame).
-3. Add a line to `roster` with `sp=100` and its 5 skill numbers.
+   free spot, e.g. sprite 106.
+2. Add 5 lines to the end of `sk` (its skills, in order).
+3. Add a line to `roster` with its sprite number. Its skills are found by
+   position: the 5th kaiju gets skills 21–25.
+4. The title screen fits 4; a 5th needs the boxes made narrower in
+   `drw_title()`.
 
 ### Changing an enemy
 
@@ -213,10 +255,10 @@ attack), speed, points. Defense 2 means it takes half damage and hits for 2.
 
 ### Room left
 
-About **8,182 of 8,192 tokens** are used: nearly full. A fourth kaiju or
-more skills would mean trimming something first (there's room to: some
-helpers can be merged, and the title screen could get simpler). Ask me
-when you get there.
+About **7,917 of 8,192 tokens** are used (`sh tools/realtokens.sh
+kaiju/rage.p8` asks PICO-8 itself). The text tables freed about 270 even
+after adding D-Tron. A new kaiju whose skills reuse the shared actions costs
+only its drawings; a new kind of action costs about 20–50 tokens.
 
 ## Sprite numbers (new in this cart)
 
@@ -225,6 +267,7 @@ when you get there.
 | 0 / 2 / 4 | Gora: walk, walk, attack |
 | 64 / 66 / 68 | Luna |
 | 70 / 72 / 74 | Korax |
+| 100 / 102 / 104 | D-Tron |
 | 76 | big tank (16 × 16) · 78 bomber (16 × 16) |
 | 96 / 98 | mech walk frames (16 × 16) |
 | 41 | coin |
@@ -238,12 +281,12 @@ tree, heart).
 python3 tools/smoke.py kaiju/rage.p8 kaiju/rage_smoke.lua
 ```
 
-plays all three kaiju in both modes (grab, breath, the Z move, orbs, rage
+plays all four kaiju in both modes (grab, breath, the Z move, orbs, rage
 mode, the late waves) through to a win: the city destroyed, or the boss
 beaten. `kaiju/rage_shots.lua` retakes the screenshots and
 `kaiju/rage_sim.lua` (add `300` to the command) has a bot play whole games
 to check the pacing, and `kaiju/rage_levels.lua` (add `580`) measures how
-fast skills level up, and `kaiju/rage_coins.lua` (add `580`) how many coins and rages a game gives. The test runner adds its code to the cart, and the
+fast skills level up, `kaiju/rage_coins.lua` (add `580`) how many coins and rages a game gives, and `kaiju/rage_skills.lua` (add `200`) fires every skill at level 3. The test runner adds its code to the cart, and the
 cart is near the token limit, so a test's first line can say
 `-- stub: name name` to empty functions it doesn't need (only in the test
 copy, never in the cart).

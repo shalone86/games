@@ -1,7 +1,7 @@
 -- a bot plays whole games (it can't die) to check the pacing:
 -- how long each mode takes and how often rage mode goes off.
 -- run: python3 tools/smoke.py kaiju/rage.p8 kaiju/rage_sim.lua 300
-for m=1,2 do for c=1,3 do
+for m=1,2 do for c=1,4 do
  sel,gm=c,m start() local r=0
  for f=1,7000 do
   local tx,ty=k.x+cos(f/400)*60,k.y+sin(f/530)*60
