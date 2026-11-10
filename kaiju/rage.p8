@@ -74,7 +74,7 @@ function start()
   sl={pk.sk[1]},lv={1,0},tm={0,0}}
  ens,shots,fx,pops,drops,objs,clouds,bolts={},{},{},{},{},{},{},{}
  score,tm,secs,shake,stop,bt,flash=0,0,0,0,0,0,0
- spawn_t,wave,rt,rival,dm=60,1,750,nil,1
+ spawn_t,wave,rt,rival,dm=60,1,gm==1 and 300 or 750,nil,1
  cx,cy=k.x-64,k.y-64
  st,it="intro",75
  music(0,0,3)
@@ -385,23 +385,23 @@ function upd_play()
  tm+=1
  if tm==30 then
   tm,secs=0,secs+1
-  -- a new wave every 25 s
-  if secs%25==0 and wave<8 then
-   wave+=1
+  -- survive: a new wave every
+  -- 25 s. destroy: the more you
+  -- wreck, the meaner it gets
+  -- (the boss at about 80%)
+  local w=gm==1 and min(8,1+nd*9\goal) or secs%25==0 and wave+1 or wave
+  if w>wave and wave<8 then
+   wave=w
    -- and a skill orb near you
    add(drops,{x=k.x+rnd(48)-24,y=k.y+rnd(48)-24,o=orb()})
-   if gm==2 then
-    -- surviving a wave pays
-    addscore(500,k.x,k.y-20)
-    if wave==8 then
-     if rival then del(ens,rival) end
-     spawn(6)
-     banner("final wave","beat the boss!")
-    else
-     banner("wave "..wave,8-wave.." waves left")
-    end
+   -- surviving a wave pays
+   if gm==2 then addscore(500,k.x,k.y-20) end
+   if wave==8 then
+    if rival then del(ens,rival) end
+    spawn(6)
+    banner("final wave","beat the boss!")
    else
-    banner("wave "..wave)
+    banner("wave "..wave,8-wave.." waves left")
    end
   end
  end
@@ -436,11 +436,12 @@ function upd_play()
  end
  k.hp=min(k.hp+k.reg,k.mhp)
 
- local ix,iy=0,0
- if btn(0) then ix=-1 end
- if btn(1) then ix=1 end
- if btn(2) then iy=-1 end
- if btn(3) then iy=1 end
+ -- arrows as -1, 0 or 1
+ -- (btn() is all the buttons
+ -- as bits: 1 left, 2 right,
+ -- 4 up, 8 down)
+ local b=btn()
+ local ix,iy=(b&2)/2-(b&1),(b&8)/8-(b&4)/4
  if ix!=0 and iy!=0 then ix*=.707 iy*=.707 end
  if ix!=0 or iy!=0 then
   k.fx,k.fy=ix,iy
@@ -600,12 +601,14 @@ end
 -- army + rival
 
 -- what comes next: bigger
--- things in later waves
+-- things in later waves (by
+-- wave 8: 1 in 5 a mech, most
+-- of the rest big)
 function pick()
  local r=rnd()
- if wave>=6 and r<.06 then return 5 end
- if wave>=4 and r<.18 then return 4 end
- if wave>=3 and r<.35 then return 3 end
+ if wave>=6 and r<(wave-5)*.07 then return 5 end
+ if wave>=4 and r<.1+wave*.03 then return 4 end
+ if wave>=3 and r<wave*.08 then return 3 end
  return rnd()<.25+wave*.04 and 2 or 1
 end
 
@@ -624,10 +627,10 @@ function spawn(kd,a)
  if kd==6 then
   -- the rival is another
   -- kaiju, tougher each wave.
-  -- the last wave of survive:
+  -- the last wave:
   -- a giant boss
   e.rk=sel%#roster+1
-  e.boss=gm==2 and wave==8
+  e.boss=wave==8
   e.hp=e.boss and 200 or 10+wave*10
   e.mhp=e.hp
   if e.boss then e.w=4 end
@@ -904,8 +907,7 @@ end
 function banner(s,s2) bn,bn2,bt=s,s2,s2 and 75 or 60 end
 
 function clock()
- local s=secs
- return s\60 ..":"..(s%60<10 and "0" or "")..s%60
+ return secs\60 ..":"..(secs%60<10 and "0" or "")..secs%60
 end
 
 function pts(s) return s<1 and "0" or flr(s).."0" end
@@ -1099,10 +1101,11 @@ function bolt(x1,y1,x2,y2)
  end
 end
 
+-- the kaiju colors cycle
+-- through 8-14 (red to pink)
 function rainbow()
- local c=split"8,9,10,11,12,14,7"
  for i,p in pairs(split"11,3,10,9,4,6") do
-  pal(p,c[(flr(t()*20)+i)%7+1])
+  pal(p,8+(t()*20+i)%7)
  end
 end
 

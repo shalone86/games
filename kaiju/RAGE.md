@@ -30,8 +30,11 @@ Each mode starts with its goal in big letters.
 | points | everything you smash, plus a **time bonus**: the faster you finish, the more (5 points a second under 5 minutes, ×10 on screen) | everything you smash, plus **500 for every wave** you survive and 1000 for the boss |
 | best score | saved per kaiju, per mode | saved per kaiju, per mode |
 
-The army grows the same way in both (a new wave every 25 s); in destroy
-mode the waves are just the clock getting meaner.
+The army grows in waves in both. In survive mode a new wave comes every
+25 s; in **destroy mode the waves follow how wrecked the city is**: about
+every 11% is a new wave, so at **about 80% the final wave comes**, with the
+boss and the screen full of big tanks and mechs. Destroying fast doesn't
+leave the army behind. In destroy mode, beating the boss also wins.
 
 ---
 
@@ -139,7 +142,7 @@ and it goes off by itself (think Mario's star, or Super Sonic):
 
 ## The rival kaiju
 
-At 25 seconds another kaiju (one you didn't pick, tinted purple) arrives,
+At 25 seconds (10 in destroy mode) another kaiju (one you didn't pick, tinted purple) arrives,
 and **it gets stronger every wave**: 10 more hp, faster, harder hits
 (1 damage, 2 from wave 3, 3 from wave 6) and more frequent fire.
 
@@ -152,7 +155,7 @@ and **it gets stronger every wave**: 10 more hp, faster, harder hits
 - Beat it: 500 points, a pile of coins, and a skill orb. 20 s later a new one
   comes, as strong as the wave it arrives in.
 
-### The boss (survive mode, wave 8)
+### The boss (wave 8, both modes)
 
 The rival comes back **twice as big** with **200 hp** (a big bar across the
 top of the screen). It never runs away, breathes fire **three ways at once**,
@@ -160,7 +163,7 @@ and hits for 3. Beat it to win.
 
 ## Waves
 
-A new wave every 25 seconds (each one also drops a skill orb near you); 8 waves, so the final wave comes at about 3 minutes.
+A new wave every 25 seconds in survive mode (about 3 minutes to the final wave), or every ~11% of the city in destroy mode. Each one also drops a skill orb near you.
 
 | wave | new |
 |---|---|
@@ -169,11 +172,13 @@ A new wave every 25 seconds (each one also drops a skill orb near you); 8 waves,
 | 3 | **big tanks**: double size, double attack, double defense (2 hp that takes half damage) |
 | 4 | **bombers**: double size; fly straight over you and drop bombs that blow up buildings (and other enemies) too |
 | 6 | **mechs**: kaiju-sized, 10 hp at double defense, punch up close, fire 3 missiles |
-| 8 | **final wave** (survive mode): the boss |
+| 8 | **final wave**: the boss. By now about 1 in 5 new enemies is a mech and most of the rest are big |
 
 Enemies arrive in **squads** (tanks and helicopters come in groups that grow
 with the waves), a new group every 2 s at first and every ⅓ s by the end, up
-to **13 enemies at once in wave 1, rising to 48 by wave 8**. The game can
+to **16 enemies at once in wave 1, rising to 58 by wave 8**. Later waves
+send bigger things more often (big tanks, bombers and mechs make up about a
+quarter of new enemies in wave 4 and two thirds in wave 8). The game can
 handle about 60 at once without slowing down (it only checks the buildings
 near each thing instead of all 300), so this can go higher.
 
@@ -208,7 +213,7 @@ attack), speed, points. Defense 2 means it takes half damage and hits for 2.
 
 ### Room left
 
-About **8,166 of 8,192 tokens** are used: nearly full. A fourth kaiju or
+About **8,182 of 8,192 tokens** are used: nearly full. A fourth kaiju or
 more skills would mean trimming something first (there's room to: some
 helpers can be merged, and the title screen could get simpler). Ask me
 when you get there.

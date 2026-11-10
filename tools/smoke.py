@@ -37,7 +37,15 @@ __f=0
 __saves={}
 function dset(i,v) __saves[i]=v end
 function dget(i) return __saves[i] or 0 end
-function btn(b) return __held[b] or false end
+-- btn() with no button: all of them as bits
+function btn(b)
+ if not b then
+  local m=0
+  for i=0,5 do if __held[i] then m+=1<<i end end
+  return m
+ end
+ return __held[b] or false
+end
 __prev={}
 -- true only on the frame the button goes down
 function btnp(b) return (__held[b] and not __prev[b]) or false end
