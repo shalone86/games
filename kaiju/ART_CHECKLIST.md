@@ -58,7 +58,7 @@ sprite 0 also covers 1, 16 and 17).
 
 - [ ] **0** Gora: walk 1
 - [ ] **2** Gora: walk 2
-- [ ] **4** Gora: attacking (mouth open; shown while breathing and in rage mode; the stomp stretches and squashes this drawing, so leave a little room)
+- [ ] **4** Gora: attacking (mouth open; shown while breathing and while charging forward; landing squashes whatever pose is showing, so leave a little room)
 - [ ] **64** Luna: wings up
 - [ ] **66** Luna: wings down
 - [ ] **68** Luna: attacking
