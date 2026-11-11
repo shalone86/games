@@ -21,19 +21,38 @@ sprite 0 also covers 1, 16 and 17).
 - **Face right.** The game mirrors everything for left.
 - **Feet / ground on the bottom rows.** Kaiju stand on the bottom of their
   16 × 16 box; buildings sit on their bottom row.
-- **Color 0 (black) is see-through.** Use 1 (dark blue) or 5 (dark grey)
-  for black outlines.
+- **Black is see-through.** For dark outlines use dark blue or dark grey.
 - **Kaiju colors matter.** The special effects recolor the kaiju by swapping
-  these colors: **11, 3, 10, 9, 4, 6** (green, dark green, yellow, orange,
-  brown, light grey). Rage mode turns them rainbow, the *hide* skill turns
+  six colors: **green, dark green, yellow, orange, brown, light grey**. Rage mode turns them rainbow, the *hide* skill turns
   them stone grey, the gold glow means "can't be hurt", and the rival is
   tinted purple. Parts in other colors (eyes, mouths, outlines) stay as they
   are, which is usually what you want. If you use different main colors,
   tell me (or edit the `stone`, `gold`, `purple` lines and `rainbow()` in
   tab 6).
-- **Breath comes out of the mouth** at about 7 pixels right of the middle
-  and 11 up from the feet. Put the mouth near there (row 5 of the 16, right
-  side) or tell me where it ended up.
+- **Breath comes out of the mouth**, at the right edge of the box, 6th row
+  from the **top** (the `*` below). Rows are counted from the top, so this is
+  head height, not near the feet. Make the open mouth touch the right edge
+  around there:
+
+```
+     column: 0 1 2 3 4 5 6 7 8 9 A B C D E F
+  row  0     . . . . . . . . . . . . . . . .
+  row  1     . . . . . . . . . . # # # # . .
+  row  2     . . . . . . . . . # # # o # # .
+  row  3     . . . . . . . . . # # # # # # #
+  row  4     . . . . . . . . . # # # # # # #   upper jaw
+  row  5     . . . . . . . . # # # # . . . *   open mouth: breath starts here
+  row  6     . . . . . . . # # # # # # # # #   lower jaw
+  row  7     . . . . . # # # # # # # . . . .
+  row  8     . . . # # # # # # # # # # . . .
+  row  9     . # # # # # # # # # # . # # . .   arm
+  row 10     # # . # # # # # # # # . . . . .
+  row 11     # . . # # # # # # # # . . . . .   tail on the left
+  row 12     . . . . # # # . # # # . . . . .
+  row 13     . . . . # # . . . # # . . . . .
+  row 14     . . . . # # . . . # # . . . . .
+  row 15     . . . # # # . . # # # . . . . .   feet on the bottom row
+```
 
 ## Kaiju (16 × 16, three each)
 
@@ -66,8 +85,10 @@ sprite 0 also covers 1, 16 and 17).
 - [ ] **34** helicopter, frame 2 (8 × 8; spin the rotor)
 - [ ] **76** big tank (16 × 16)
 - [ ] **78** bomber (16 × 16, side view, nose right)
-- [ ] **96** mech, step 1 (16 × 16, kaiju-sized)
-- [ ] **98** mech, step 2 (16 × 16)
+
+(The mech is D-Tron's two walk drawings in grey: every color turns to a
+grey, so give D-Tron bright colors to tell them apart. No extra drawing
+needed; 96 and 98 are free now.)
 
 ## Small things (8 × 8)
 

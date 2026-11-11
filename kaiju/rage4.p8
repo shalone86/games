@@ -46,7 +46,7 @@ bspr=split"37,6,8,10"
 -- 1 tank 2 heli 3 big tank
 -- 4 bomber 5 mech 6 rival
 et={}
-for s in all(split("32,1,1,1,.3,20|33,1,1,1,.6,30|76,2,2,2,.25,60|78,2,2,2,1.1,80|96,2,10,2,.4,300|0,2,20,1,.7,500","|")) do
+for s in all(split("32,1,1,1,.3,20|33,1,1,1,.6,30|76,2,2,2,.25,60|78,2,2,2,1.1,80|100,2,10,2,.4,300|0,2,20,1,.7,500","|")) do
  add(et,split(s))
 end
 
@@ -1222,6 +1222,7 @@ end
 stone="11,6,3,5,10,6,9,5,4,5,6,7"
 gold="11,10,3,9,10,7,9,10,4,10,6,7"
 purple="11,14,3,2,10,14,9,2,4,14,6,13"
+grey="1,5,2,5,3,5,4,5,8,13,9,6,10,7,11,6,12,6,14,6,15,7"
 
 function drw_k()
  -- a ring in your color under
@@ -1271,7 +1272,7 @@ end
 function drw_e(e)
  local w=e.w
  if e.fl>0 then white()
- elseif e.k==6 then tint(purple) end
+ elseif e.k>4 then tint(e.k>5 and purple or grey) end
  if e.k==6 then
   local h=w*4
   big(roster[e.rk].sp+flr(t()*4)%2*2,e.x-h,e.y-h,h*2,h*2,e.face<0)
