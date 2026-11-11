@@ -1,0 +1,1430 @@
+-- kaiju rage 4 players
+-- by shalone cason
+-- (working title. stand-in
+--  art + sounds: redraw!)
+--
+-- 1-4 players, one controller
+-- each. three modes:
+--  1 wreck the most city
+--  2 the same, friendly fire on
+--  3 survive 8 waves together
+--
+-- tab 0 setup, states, buttons
+-- tab 1 kaiju + their skills
+-- tab 2 the city
+-- tab 3 the kaiju moves
+-- tab 4 army + rival
+-- tab 5 effects + pickups
+-- tab 6 drawing + hud
+--
+-- k is the kaiju being worked
+-- on right now: use(p) picks
+-- one, so the 1-player code
+-- works for each in turn
+
+cartdata("sdcason_kaiju_rage4")
+world=384
+-- md: the mode (above).
+-- js: who joined (by
+-- controller 0-3) and the
+-- kaiju they picked
+st,md,js="title",1,{[0]=1}
+-- player colors: green, blue,
+-- pink, orange
+pc=split"11,12,14,9"
+-- buildings, by kind+1:
+-- tree, house, office, tower
+bhp=split"1,1,3,6"
+bpts=split"1,10,25,50"
+bspr=split"37,6,8,10"
+-- enemies: sprite, size,
+-- hp, defense (= attack),
+-- speed, points. by kind:
+-- 1 tank 2 heli 3 big tank
+-- 4 bomber 5 mech 6 rival
+et={}
+for s in all(split("32,1,1,1,.3,20|33,1,1,1,.6,30|76,2,2,2,.25,60|78,2,2,2,1.1,80|96,2,10,2,.4,300|0,2,20,1,.7,500","|")) do
+ add(et,split(s))
+end
+
+function _update()
+ if st=="title" then upd_title()
+ elseif st=="play" then upd_play()
+ elseif st=="intro" then
+  -- the big goal message
+  it-=1
+  if it<=0 then st="play" end
+ else
+  ot+=1 upd_fx()
+  if ot>45 and (btnp(4) or btnp(5)) then st="title" end
+ end
+end
+
+function _draw()
+ if st=="title" then drw_title() else drw_play() end
+end
+
+-- players 2-4: x joins.
+-- everyone: left /
+-- right picks a kaiju.
+-- player 1: up / down picks
+-- the mode, z or x starts
+function upd_title()
+ for i=0,3 do
+  local j=js[i]
+  if i>0 then
+   if btnp(5,i) and not j then j=i+1 sfx(8) end
+  end
+  if j then
+   if btnp(0,i) then j-=1 sfx(8) end
+   if btnp(1,i) then j+=1 sfx(8) end
+   j=(j-1)%#roster+1
+  end
+  js[i]=j
+ end
+ if btnp(2) then md-=1 sfx(8) end
+ if btnp(3) then md+=1 sfx(8) end
+ md=(md-1)%3+1
+ if btnp(4) or btnp(5) then start() end
+end
+
+function start()
+ -- gm: 1 wreck (3 minutes),
+ --     2 survive the waves
+ gm,ff=md<3 and 1 or 2,md==2
+ make_city()
+ -- the city bar: half of it
+ goal,nd=flr(nb*.5),0
+ ks={}
+ for i=0,3 do
+  if js[i] then
+   -- a kaiju (written as text
+   -- to save tokens, see tbl)
+   k=tbl[[x,y,vx,vy,fx,fy,face,fr,z,inv,en,bl,dash,fly,zc,zp,sq,zt,xt,rage,rg,shell,ang,sc,nd
+0,192,0,0,1,0,1,0,0,0,60,0,0,0,1,1,0,0,0,0,0,0,0,0,0]][1]
+   pk=roster[js[i]]
+   -- 2 skill slots: skill,
+   -- level, timer
+   k.pk,k.n,k.c,k.x,k.hp,k.mhp,k.sl,k.lv,k.tm=pk,i,pc[i+1],168+i*16,pk.hp,pk.hp,{pk.sk[1]},{1,0},{0,0}
+   add(ks,k)
+  end
+ end
+ np,al=#ks,{}
+ for p in all(ks) do add(al,p) end
+ -- nobody: bombs blow up
+ -- buildings for no one
+ nob={sl={},pk=pk,rg=0,sc=0,nd=0}
+ ens,shots,fx,pops,drops,objs,clouds,bolts={},{},{},{},{},{},{},{}
+ tm,secs,shake,stop,bt,flash=0,0,0,0,0,0
+ spawn_t,wave,rt,rival,dm=60,1,300,nil,1
+ tx,ty=128,128 cx,cy=tx,ty
+ -- the goal, big
+ st,it="intro",75
+ banner(unpack(split(split("wreck it!,most buildings wins|wreck it!,friendly fire on!|survive!,8 waves together","|")[md])))
+ music(0,0,3)
+end
+
+-- the kaiju everything works
+-- on right now (rage mode:
+-- double damage + points)
+function use(p)
+ k,pk=p,p.pk
+ dm=p.rg>0 and 2 or 1
+end
+
+function over(w)
+ st,ot,won="over",0,w
+ music(-1) sfx(w and 9 or 2)
+ -- wreck: whoever wrecked the
+ -- most buildings wins (then
+ -- points). survive: all the
+ -- points together
+ wn,score=ks[1],0
+ for p in all(ks) do
+  score+=p.sc
+  if p.nd>wn.nd or p.nd==wn.nd and p.sc>wn.sc then wn=p end
+ end
+ if gm==1 then score=wn.sc end
+ score=min(score,32000)
+ if not w then boom(k.x,k.y-8,40) end
+ -- best scores: slots 1-3
+ best=dget(md)
+ if score>best then dset(md,score) end
+end
+
+-- x hold: breath
+-- z: stomp, dash, fly or jet
+-- z+x together: grab
+-- holding something: any
+--  button throws it
+function buttons()
+ local n=k.n
+ local z,x,pz=btn(4,n),btn(5,n),k.zt
+ if not (z or x) then k.lock=false end
+ k.zt=z and k.zt+1 or 0
+ k.xt=x and k.xt+1 or 0
+ if k.lock then k.bl=0 return end
+ if k.held then
+  if btnp(4,n) or btnp(5,n) then throw() k.lock=true end
+  return
+ end
+ -- both pressed within 5
+ -- frames of each other = grab
+ if k.zt>0 and k.xt>0 and k.zt<6 and k.xt<6 then
+  grab() k.lock=true return
+ end
+ -- so z waits 5 frames (or
+ -- until let go) before acting
+ if k.zt==6 or (not z and pz>0 and pz<6 and k.xt==0) then
+  zmove()
+ end
+ if k.xt>=6 then breath()
+ else k.bl=0 k.en=min(k.en+.4,60) end
+end
+
+-->8
+-- kaiju + their skills
+
+-- turns a table written as
+-- text into a list of tables:
+-- the first line names the
+-- fields, each line after is
+-- one thing. (a whole string
+-- is 1 token, a table like
+-- {n="gora",hp=10} is 7)
+function tbl(s)
+ local r,h={}
+ for l in all(split(s,"\n")) do
+  local v,o=split(l),{}
+  if h then
+   for i,n in pairs(h) do o[n]=v[i] end
+   add(r,o)
+  else h=v end
+ end
+ return r
+end
+
+-- n name, d what it is
+-- z: stomp, dash, fly or jet
+-- zr: how fast z charges back
+-- zt: frames up for fly/jet
+-- sp: first sprite (walk 1,
+--  walk 2, attack)
+-- spd speed, bc breath color
+roster=tbl[[n,d,z,zr,zt,sp,hp,spd,bc
+gora,big lizard,stomp,.02,7,0,10,1.2,12
+luna,giant moth,fly,.008,90,64,8,1.35,10
+korax,spiked tank,dash,.025,0,70,13,1.05,9
+d-tron,hero robot,jet,.016,45,100,11,1.15,7]]
+-- each kaiju's 5 skills come
+-- in order: 1-5 are gora's,
+-- 6-10 luna's...
+for i,r in pairs(roster) do
+ r.sk,r.i={},i
+ for j=1,5 do add(r.sk,i*5-5+j) end
+end
+
+-- every skill: name, orb color,
+-- a: what it does (see fire()
+--  and skill() below),
+-- cd: frames between uses,
+--  cl less each level,
+-- r: size/reach, rl more each
+--  level, d: damage (or how
+--  long), dl more each level,
+-- x: extra (how many)
+sk=tbl[[n,c,a,cd,cl,r,rl,d,dl,x
+flame,9,ray,80,15,30,10,1,0,0
+tail,4,nova,110,20,14,6,1,1,0
+roar,13,dizzy,240,30,40,12,90,30,0
+hide,6,pass,0,0,1,-.2,1,0,0
+rejuv,11,pass,0,0,1.5,0,.8,.005,0
+gust,7,gust,150,25,36,8,20,0,0
+spores,14,orbit,0,0,0,0,1,0,0
+zap,12,zap,50,10,0,0,1,.5,0
+dust,10,dust,70,0,10,3,90,30,0
+cocoon,11,pass,0,0,1,0,1,.012,1
+spikes,6,spikes,70,0,0,0,1,0,4
+quake,4,nova,160,20,28,8,2,0,0
+shell,12,shell,300,40,0,0,45,20,0
+thorns,3,thorn,0,0,0,0,0,0,0
+rock,9,lob,90,10,12,4,1,1,0
+beam,12,ray,60,10,40,12,1,0,0
+punch,8,lob,120,20,16,4,2,1,0
+missile,9,lob,90,10,8,0,1,0,1
+barrier,10,shell,360,40,0,0,60,20,0
+repair,11,pass,0,0,1,0,1,.004,0]]
+
+-- every frame, for each skill
+-- you have (i = its slot)
+function skill(s,l,i)
+ local a=s.a
+ if a=="pass" then
+  -- always on: armor (hide
+  -- turns you to stone), speed,
+  -- healing (x=1: only while
+  -- standing still)
+  k.arm*=s.r+s.rl*l k.spm*=s.d
+  if s.x==0 or k.vx==0 and k.vy==0 then k.reg+=s.dl*l end
+  if s.rl<0 then k.tint=true end
+ elseif a=="thorn" then k.thorn=l
+ elseif a=="orbit" then
+  -- spores circle you, chew
+  -- buildings, block shots
+  k.ang+=.012
+  for i=0,l do
+   local x,y=orbit(i,l+1)
+   if tm%5==0 then hit(x,y,3,1) end
+   for s in all(shots) do
+    if box(s.x,s.y,x,y,5) then del(shots,s) end
+   end
+  end
+ else
+  k.tm[i]-=1
+  if k.tm[i]<=0 then k.tm[i]=fire(s,l) end
+ end
+end
+
+-- a skill goes off. returns
+-- the frames until next time.
+-- p=k: what it makes belongs
+-- to you (points, friendly
+-- fire)
+function fire(s,l)
+ local a,r,d=s.a,s.r+s.rl*l,s.d+s.dl*l
+ if a=="nova" then
+  -- a shockwave around you
+  nova(r,d,s.c) shake=r/8
+ elseif a=="dizzy" then
+  -- enemies wander and shoot
+  -- the wrong way
+  dizzy(r,d)
+ elseif a=="shell" then
+  -- can't be hurt for a bit
+  k.shell=d sfx(9)
+ elseif a=="dust" then
+  -- a cloud that hurts
+  add(clouds,{x=k.x,y=k.y,t=d,r=r,p=k})
+ elseif a=="gust" then
+  -- pushes enemies away and
+  -- blows shots away
+  for e in all(ens) do
+   if dist(e.x,e.y,k.x,k.y)<r then push(e,d) end
+  end
+  for b in all(shots) do
+   if dist(b.x,b.y,k.x,k.y)<r then del(shots,b) end
+  end
+  ring(k.x,k.y-6,r,7) sfx(6)
+ elseif a=="spikes" then
+  -- a ring of spikes
+  local n=s.x*l
+  for i=1,n do
+   local b=i/n+k.ang
+   add(objs,{x=k.x,y=k.y-4,dx=cos(b)*3,dy=sin(b)*3,t=15,r=3,d=d,p=k})
+  end
+  k.ang+=.06 sfx(7)
+ else
+  -- the rest aim at the
+  -- nearest enemy
+  local e=near(80)
+  if not e then return 10 end
+  if a=="zap" then
+   add(bolts,{x=e.x,y=e.y,t=5,p=k})
+   hit(e.x,e.y,3,d,true) sfx(1)
+  elseif a=="ray" then
+   -- flame, beam: a line of
+   -- hits r long
+   local b=atan2(e.x-k.x,e.y-k.y+6)
+   for i=6,r,5 do
+    local x,y=k.x+cos(b)*i,k.y-6+sin(b)*i
+    hit(x,y,2+l,d)
+    add(fx,{x=x,y=y,dx=rnd()-.5,dy=-rnd(),t=8+rnd(8),c=rnd{s.c,7,10}})
+   end
+   sfx(1)
+  else
+   -- lob: rock, punch, missiles
+   -- (x*level of them, or 1).
+   -- they land on it and blow
+   -- up r wide
+   for i=1,max(1,s.x*l) do
+    add(objs,{x=k.x,y=k.y,dx=(e.x-k.x+rnd(i*12-12))/20,dy=(e.y-k.y+rnd(i*12-12))/20,t=20,r=r,d=d,c=s.c,p=k})
+   end
+   sfx(6)
+  end
+ end
+ return s.cd-s.cl*l
+end
+
+-- skill helpers
+function near(r)
+ local tg,td=nil,r
+ for e in all(ens) do
+  local d=dist(e.x,e.y,k.x,k.y)
+  if d<td then tg,td=e,d end
+ end
+ return tg
+end
+
+-- the kaiju nearest x,y that
+-- isn't down
+function nk(x,y)
+ local t,td=k,999
+ for p in all(al) do
+  local d=dist(p.x,p.y,x,y)
+  if d<td then t,td=p,d end
+ end
+ return t
+end
+
+function nova(r,d,c)
+ hit(k.x,k.y,r,d) ring(k.x,k.y,r+4,c)
+ shake=max(shake,2) sfx(0)
+end
+
+function dizzy(r,t)
+ for e in all(ens) do
+  if dist(e.x,e.y,k.x,k.y)<r then e.dz=t end
+ end
+ ring(k.x,k.y-8,r,13) sfx(5)
+end
+
+function push(e,d)
+ local a=atan2(e.x-k.x,e.y-k.y)
+ e.x+=cos(a)*d e.y+=sin(a)*d
+end
+
+function orbit(i,n)
+ local a=k.ang+i/n
+ return k.x+cos(a)*20,k.y-6+sin(a)*14
+end
+
+function has(id)
+ for i=1,2 do
+  if k.sl[i]==id then return i end
+ end
+end
+
+-- a random skill orb for
+-- the kaiju k is
+function orb() return pk.sk[flr(rnd(5))+1] end
+
+-->8
+-- the city
+
+function make_city()
+ -- gr: the building on each
+ -- 16x16 lot, so we only ever
+ -- look at the ones nearby
+ gr,nb={},0
+ for bx=0,world-1,64 do
+  for by=0,world-1,64 do
+   for i=0,2 do
+    for j=0,2 do
+     local x,y,r=bx+16+i*16,by+16+j*16,rnd()
+     local kd=r<.25 and 0 or r<.6 and 1 or r<.85 and 2 or 3
+     if r<.93 and dist(x+8,y+8,world/2,world/2)>40 then
+      gr[x\16+y\16*24]={x=x,y=y,k=kd,hp=bhp[kd+1],fl=0}
+      if kd>0 then nb+=1 end
+     end
+    end
+   end
+  end
+ end
+end
+
+-- distance that can't overflow
+function dist(x1,y1,x2,y2)
+ local dx,dy=(x2-x1)/16,(y2-y1)/16
+ return sqrt(dx*dx+dy*dy)*16
+end
+
+-- is a within r of b (a box)
+function box(ax,ay,bx,by,r)
+ return abs(ax-bx)<r and abs(ay-by)<r
+end
+
+-- standing buildings within
+-- about r of x,y
+function near_b(x,y,r)
+ local l={}
+ for i=(x-r)\16-1,(x+r)\16+1 do
+  for j=(y-r)\16-1,(y+r)\16+1 do
+   local b=gr[i+j*24]
+   if b and not b.dead then add(l,b) end
+  end
+ end
+ return l
+end
+
+function bump(x,y)
+ for b in all(near_b(x,y,8)) do
+  local h=b.k==0 and 7 or 11
+  if box(x,y,b.x+8,b.y+8,h) then
+   return b
+  end
+ end
+end
+
+-- k wrecked it: k's points,
+-- k's building
+function smash(b)
+ b.dead=true
+ addscore(bpts[b.k+1],b.x+8,b.y)
+ boom(b.x+8,b.y+8,b.k*4+3)
+ shake=max(shake,b.k)
+ sfx(b.k<2 and 10 or 2)
+ if b.k>0 then
+  drop(b.x+8,b.y+8,b.k>1 and .2 or .06)
+  nd+=1 k.nd+=1
+  if gm==1 and nd>=goal and st=="play" then over(true) end
+ end
+end
+
+-- hurt every building and
+-- enemy in a box around x,y.
+-- eo = enemies only.
+-- friendly fire: other kaiju
+-- too (half damage)
+function hit(x,y,r,d,eo)
+ local n=0
+ d*=dm
+ if not eo then
+  for b in all(near_b(x,y,r+6)) do
+   if box(b.x+8,b.y+8,x,y,r+6) then
+    n+=1 b.hp-=d b.fl=4
+    if b.hp<=0 then smash(b) end
+   end
+  end
+ end
+ for e in all(ens) do
+  if box(e.x,e.y,x,y,r+e.w*4) then
+   n+=1 e.hp-=d/e.df e.fl=4
+   if e.hp<=0 then kill(e) end
+  end
+ end
+ if ff and k.n then
+  local a=k
+  for p in all(al) do
+   if p!=a and box(p.x,p.y-6,x,y,r+6) then
+    n+=1
+    if d>0 then
+     use(p) hurt(max(1,d/2))
+     -- a knockout pays 300
+     if p.dn then
+      a.sc+=30
+      banner("p"..a.n+1 .." knocks out p"..p.n+1)
+     end
+     use(a)
+    end
+   end
+  end
+ end
+ return n
+end
+
+-->8
+-- the kaiju moves
+
+function upd_play()
+ if stop>0 then stop-=1 return end
+ tm+=1
+ if tm==30 then
+  tm,secs=0,secs+1
+  -- a new wave every 25 s
+  -- (wreck mode stops at 7:
+  -- no boss, the clock ends it)
+  local w=min(gm==1 and 7 or 8,1+secs\25)
+  if w>wave then
+   wave=w
+   for p in all(ks) do
+    use(p)
+    -- survive: kaiju that are
+    -- down come back
+    if p.dn and gm==2 then back(p,p.mhp/2) end
+    -- a skill orb near each
+    add(drops,{x=k.x+rnd(48)-24,y=k.y+rnd(48)-24,o=orb()})
+    -- surviving a wave pays
+    if gm==2 then addscore(500\np,k.x,k.y-20) end
+   end
+   if wave==8 then
+    if rival then del(ens,rival) end
+    spawn(6)
+    banner("final wave","beat the boss!")
+   else
+    banner("wave "..wave,gm==2 and 8-wave.." waves left" or "the army grows")
+   end
+  end
+  if gm==1 and secs>=180 then over(true) end
+ end
+
+ -- the camera follows everyone
+ -- who isn't down. wreck: back
+ -- in 3 s
+ -- (al: everyone who isn't)
+ local sx,sy=0,0
+ al={}
+ for p in all(ks) do
+  if p.dn then
+   p.rt-=1
+   if gm==1 and p.rt<=0 then back(p,p.mhp) end
+  else
+   sx+=p.x sy+=p.y add(al,p)
+  end
+ end
+ if #al>0 then tx,ty=mid(0,sx/#al-64,world-128),mid(0,sy/#al-72,world-128) end
+ for p in all(al) do use(p) upd_k() end
+ upd_objs()
+ upd_army()
+ upd_fx()
+end
+
+-- back in the middle of the
+-- screen, h hp
+function back(p,h)
+ p.dn,p.hp,p.inv,p.x,p.y=nil,h,90,tx+64,ty+72
+end
+
+-- one kaiju's frame
+function upd_k()
+ -- skills set these fresh
+ -- every frame
+ k.arm,k.spm,k.reg,k.tint,k.thorn=1,1,0,false,0
+ k.atk,k.safe=false,false
+ k.inv=max(k.inv-1,0)
+ for i=1,2 do
+  local id=k.sl[i]
+  if id then
+   skill(sk[id],k.lv[i],i)
+  end
+ end
+ if k.shell>0 then k.shell-=1 k.safe=true end
+ if k.rg>0 then
+  -- rage mode: double damage +
+  -- points, faster, can't be
+  -- hurt, and anything you
+  -- touch blows up
+  k.rg-=1 k.safe=true k.spm*=1.5
+  if tm%2==0 then hit(k.x,k.y-6,12,3) end
+  add(fx,{x=k.x+rnd(20)-10,y=k.y-rnd(24),dx=rnd()-.5,dy=-rnd(),t=12,c=rnd(split"7,10,9,8,14,12,11")})
+  if k.rg==0 then music(0,0,3) pb("rage over") end
+ end
+ k.hp=min(k.hp+k.reg,k.mhp)
+
+ -- arrows as -1, 0 or 1
+ -- (btn() is all the buttons
+ -- as bits: 1 left, 2 right,
+ -- 4 up, 8 down; the next
+ -- player's are 8 bits on)
+ local b=btn()>>k.n*8
+ local ix,iy=(b&2)/2-(b&1),(b&8)/8-(b&4)/4
+ if ix!=0 and iy!=0 then ix*=.707 iy*=.707 end
+ if ix!=0 or iy!=0 then
+  k.fx,k.fy=ix,iy
+  if ix!=0 then k.face=sgn(ix) end
+  k.fr+=.15
+ end
+ local s=pk.spd*k.spm
+ k.vx,k.vy=ix*s,iy*s
+
+ buttons()
+ -- z charges back on the ground
+ if k.z+k.dash==0 then k.zc=min(k.zc+pk.zr,1) end
+ if k.dash>0 then
+  k.dash-=1 k.safe,k.atk=true,true
+  k.vx,k.vy=k.fx*3.5,k.fy*3.5
+  hit(k.x,k.y-4,8,2,true)
+  add(fx,{x=k.x,y=k.y-8,dx=0,dy=0,t=6,c=9})
+ end
+ if k.fly>0 then
+  k.fly-=1 k.z=min(k.z+2,24)
+ elseif k.z>0 then
+  k.z=max(k.z-6,0)
+  if k.z==0 then
+   -- landing: as strong as
+   -- the charge it started with
+   local b,p=bump(k.x,k.y),k.zp
+   while b do smash(b) b=bump(k.x,k.y) end
+   hit(k.x,k.y,22*p,3*p)
+   ring(k.x,k.y,26*p,7) ring(k.x,k.y,16*p,10)
+   shake,k.sq=6*p,6 sfx(0)
+  end
+ end
+
+ move_k()
+ pickups()
+end
+
+-- z works any time, but only
+-- as strong as its charge
+-- (at least 30%), so using it
+-- again too soon is weaker.
+-- fly, jet: z takes off, z
+-- again (or running out) dives
+-- down. stomp: a hop + slam.
+-- zt (roster): frames up
+function zmove()
+ if k.fly>0 then k.fly=0 return end
+ if k.z+k.dash>0 then return end
+ local p,z=.3+k.zc*.7,pk.z
+ k.zp,k.zc=p,0
+ if z=="dash" then k.dash=flr(10*p)
+ else k.fly=flr(pk.zt*p) end
+ sfx(6)
+end
+
+function breath()
+ if k.en<=0 then k.bl=0 return end
+ if k.rg==0 then k.en-=1 end
+ local m=k.rg>0 and 96 or 56
+ k.atk=true
+ k.vx*=.4 k.vy*=.4
+ k.bl=min(k.bl+5,m)
+ if tm%3==0 then
+  for i=8,k.bl,8 do
+   hit(k.x+k.fx*i,k.y-4+k.fy*i,4,1)
+  end
+ end
+ if tm%6==0 then sfx(1) end
+end
+
+-- grab what's in front:
+-- a small enemy or a building
+function grab()
+ local gx,gy=k.x+k.fx*10,k.y+k.fy*10-4
+ for e in all(ens) do
+  if e.k<4 and box(e.x,e.y,gx,gy,16) then
+   del(ens,e) addscore(et[e.k][6],e.x,e.y)
+   k.held,k.hw=et[e.k][1],e.w
+   sfx(3) return
+  end
+ end
+ for b in all(near_b(gx,gy,16)) do
+  if b.k>0 and box(b.x+8,b.y+8,gx,gy,16) then
+   k.held,k.hw=bspr[b.k+1],2
+   smash(b) return
+  end
+ end
+end
+
+function throw()
+ add(objs,{x=k.x,y=k.y,dx=k.fx*4,dy=k.fy*4,t=18,s=k.held,w=k.hw,r=18,d=5,p=k})
+ k.held=nil sfx(6)
+end
+
+-- everyone stays on the one
+-- screen (tx,ty: where the
+-- camera is going)
+function move_k()
+ if k.z>0 or bump(k.x,k.y) then
+  k.x+=k.vx k.y+=k.vy
+ else
+  try(k.x+k.vx,k.y)
+  try(k.x,k.y+k.vy)
+ end
+ k.x,k.y=mid(max(8,tx+6),k.x,min(world-8,tx+122)),mid(max(12,ty+30),k.y,min(world-4,ty+108))
+end
+
+function try(x,y)
+ local b=bump(x,y)
+ if b and not crush(b) then return end
+ k.x,k.y=x,y
+end
+
+-- trees always break. a dash
+-- does 3 damage (towers stop
+-- it). a rampage breaks all.
+function crush(b)
+ if b.k==0 or k.rg>0 then smash(b) return true end
+ if k.dash>0 then
+  b.hp-=3 b.fl=4
+  if b.hp>0 then k.dash,shake=0,3 return end
+  smash(b) return true
+ end
+end
+
+function hurt(n)
+ if k.safe or k.inv>0 then return end
+ k.hp-=n*k.arm
+ k.inv,shake=30,4
+ sfx(4)
+ if k.thorn>0 then nova(24,1+k.thorn,3) end
+ if k.hp<=0 then down() end
+end
+
+-- out of hp. survive: back
+-- next wave; everyone down is
+-- the end. wreck: back in 3 s
+function down()
+ k.dn,k.rt,k.rg,k.held=true,90,0
+ boom(k.x,k.y-8,30) sfx(2)
+ pb("down!")
+ del(al,k)
+ if gm==2 and #al==0 then over() end
+end
+
+-- the rage meter is full:
+-- rage mode, like a super star
+function rampage()
+ k.rage,k.rg=0,300
+ nova(48,4,7)
+ ring(k.x,k.y,70,10) ring(k.x,k.y,90,8)
+ shake,stop,flash=8,8,3
+ sfx(5) music(1,0,3)
+end
+
+-->8
+-- army + rival
+
+-- what comes next: bigger
+-- things in later waves (by
+-- wave 8: 1 in 5 a mech, most
+-- of the rest big)
+function pick()
+ local r=rnd()
+ if wave>=6 and r<(wave-5)*.07 then return 5 end
+ if wave>=4 and r<.1+wave*.03 then return 4 end
+ if wave>=3 and r<wave*.08 then return 3 end
+ return rnd()<.25+wave*.04 and 2 or 1
+end
+
+-- arrives around k
+function spawn(kd,a)
+ a=a or rnd()
+ local q=et[kd]
+ local e={k=kd,x=mid(4,k.x+cos(a)*90+rnd(20)-10,world-4),
+  y=mid(4,k.y+sin(a)*90+rnd(20)-10,world-4),
+  hp=q[3],df=q[4],w=q[2],cd=60+rnd(60),fl=0,dz=0,face=1}
+ if kd==4 then
+  -- bombers fly straight at
+  -- you and keep going
+  local b=atan2(k.x-e.x,k.y-e.y)
+  e.dx,e.dy=cos(b)*q[5],sin(b)*q[5]
+ end
+ if kd==6 then
+  -- the rival is another
+  -- kaiju, tougher each wave
+  -- (and with more players).
+  -- the last wave: a giant boss
+  e.rk=flr(rnd(#roster))+1
+  e.boss=wave==8
+  e.hp=(e.boss and 200 or 10+wave*10)*(.5+np/2)
+  e.mhp=e.hp
+  if e.boss then e.w=4 end
+  rival=e
+  banner("a rival kaiju!")
+ end
+ add(ens,e)
+end
+
+function upd_army()
+ spawn_t-=1
+ -- squads: tanks and helis
+ -- come in groups that grow
+ -- with the waves. they come
+ -- for someone in the middle
+ if spawn_t<=0 and #ens<10+wave*5 then
+  use(nk(tx+64,ty+72))
+  local kd,a=pick(),rnd()
+  for i=1,kd<3 and 1+rnd(wave/2+1) or 1 do spawn(kd,a) end
+  spawn_t=max(6,50-wave*7)
+ end
+ if not rival then
+  rt-=1
+  if rt<=0 then use(nk(tx+64,ty+72)) spawn(6) end
+ end
+ for e in all(ens) do
+  -- each goes after the
+  -- nearest kaiju
+  if tm==0 or not e.tg or e.tg.dn then e.tg=nk(e.x,e.y) end
+  use(e.tg)
+  local d,a,q=dist(e.x,e.y,k.x,k.y),atan2(k.x-e.x,k.y-e.y),et[e.k]
+  local s,kd=q[5],e.k
+  e.fl=max(e.fl-1,0) e.cd-=1
+  if e.dz>0 then e.dz-=1 a=rnd() end
+  if kd==4 then
+   e.x+=e.dx e.y+=e.dy
+   if d<24 and e.cd<=0 then
+    e.cd=12
+    add(shots,{x=e.x,y=e.y,dx=0,dy=0,t=30,b=true,d=2})
+   end
+   if d>160 then del(ens,e) end
+  elseif kd==6 then
+   rival_ai(e,d,a)
+  else
+   if d>(kd==5 and 12 or 36) or e.dz>0 then
+    e.x+=cos(a)*s e.y+=sin(a)*s
+   end
+   if e.cd<=0 and d<80 then
+    if kd==5 and d<18 and k.z==0 then
+     -- mechs punch up close
+     hurt(2) e.cd=40 sfx(10)
+    else
+     -- mechs fire 3 missiles
+     local n=kd==5 and 3 or 1
+     e.cd=kd==5 and 150-wave*8 or max(40,110-wave*9)+rnd(40)
+     for i=1,n do
+      local b=a+(i-(n+1)/2)*.06
+      add(shots,{x=e.x,y=e.y,dx=cos(b),dy=sin(b),t=100,s=(kd==2 or kd==5) and 36 or 35,d=e.df})
+     end
+     sfx(7)
+    end
+   end
+  end
+  e.x,e.y=mid(4,e.x,world-4),mid(4,e.y,world-4)
+ end
+
+ for s in all(shots) do
+  if s.s==36 then
+   -- missiles steer a little
+   -- toward the nearest kaiju
+   local p=nk(s.x,s.y)
+   local a=atan2(p.x-s.x,p.y-8-s.y)
+   s.dx=s.dx*.98+cos(a)*.04
+   s.dy=s.dy*.98+sin(a)*.04
+  end
+  s.x+=s.dx s.y+=s.dy s.t-=1
+  if s.b then
+   -- a bomb: blows up where it
+   -- fell, buildings and all
+   if s.t<0 then
+    del(shots,s)
+    use(nob) hit(s.x,s.y,10,2)
+    ring(s.x,s.y,14,9) boom(s.x,s.y,8) sfx(2)
+    for p in all(al) do
+     if box(s.x,s.y,p.x,p.y-6,12) and p.z==0 then use(p) hurt(2) end
+    end
+   end
+  elseif s.t<0 then
+   del(shots,s)
+  else
+   for p in all(al) do
+    if abs(s.x-p.x)<5 and abs(s.y-p.y+7+p.z)<7 and (p.z==0 or s.s==36 or s.c) then
+     use(p) del(shots,s) boom(s.x,s.y,5) hurt(s.d)
+     break
+    end
+   end
+  end
+ end
+end
+
+-- hunt the nearest kaiju
+-- (it doesn't run away in
+-- this cart: no room)
+function rival_ai(e,d,a)
+ -- faster + harder hitting
+ -- every wave
+ local s,p=.6+wave*.04,1+wave\3
+ if d>12 then
+  e.x+=cos(a)*s e.y+=sin(a)*s
+ end
+ e.face=sgn(k.x-e.x)
+ if e.cd<=0 and e.dz==0 then
+  if d<10+e.w*2 and k.z==0 then
+   hurt(p) push(e,14) e.cd=45 sfx(10)
+  elseif d<48+e.w*8 then
+   -- fire! bosses breathe
+   -- three ways at once
+   for j=-1,1 do
+    if e.boss or j==0 then
+     local b=a+j*.07
+     for i=0,3 do
+      add(shots,{x=e.x+cos(b)*i*6,y=e.y+sin(b)*i*6,dx=cos(b)*2.5,dy=sin(b)*2.5,t=40,c=8,d=p})
+     end
+    end
+   end
+   e.cd=max(50,150-wave*12) sfx(1)
+  end
+ end
+end
+
+-- k beat it
+function kill(e)
+ del(ens,e)
+ boom(e.x,e.y,8*e.w)
+ addscore(et[e.k][6],e.x,e.y)
+ sfx(2)
+ for i=1,e.k>4 and 6 or 1 do
+  drop(e.x+rnd(16)-8,e.y+rnd(16)-8,e.w>1 and .6 or .08)
+ end
+ if e.k==6 then
+  rival,rt=nil,600
+  add(drops,{x=e.x,y=e.y,o=orb()})
+  banner("rival beaten!")
+  if e.boss then addscore(1000,e.x,e.y) over(true) end
+ end
+end
+
+-->8
+-- effects + pickups
+
+-- coins, hearts, sometimes an
+-- orb for k's kaiju (fewer
+-- once you have 2 skills:
+-- they level faster now that
+-- they fly to you)
+function drop(x,y,po)
+ local r=rnd()
+ if r<.6/gm then add(drops,{x=x,y=y,s=41})
+ elseif r>.94 then add(drops,{x=x,y=y,s=40}) end
+ if rnd()<po*(k.sl[2] and .15 or 1) then add(drops,{x=x,y=y+3,o=orb()}) end
+end
+
+-- coins and hearts: anyone.
+-- orbs: only that kaiju (two
+-- goras share)
+function pickups()
+ k.ho=nil
+ -- the weaker skill (the older
+ -- one if they tie)
+ local o=k.lv[1]<=k.lv[2] and 1 or 2
+ for d in all(drops) do
+  -- (another kaiju's orb:
+  -- not for you)
+  if not (d.o and (d.o-1)\5+1!=pk.i) then
+  -- orbs for skills you have
+  -- fly to you
+  if d.o and has(d.o) and dist(d.x,d.y,k.x,k.y)<48 then
+   local a=atan2(k.x-d.x,k.y-4-d.y)
+   d.x+=cos(a)*2 d.y+=sin(a)*2
+  end
+  if box(d.x,d.y,k.x,k.y-4,8) then
+   d.h=(d.h or 0)+1
+   if d.o and k.sl[2] and k.lv[o]>1 and not has(d.o) and d.h<30 then
+    -- level 2+ skills are safe
+    -- unless you stand here
+    -- for a second
+    k.ho=d
+   elseif d.o then
+    -- touch it, you take it
+    del(drops,d) sfx(9)
+    local i=has(d.o)
+    if i then
+     -- same skill: level up
+     k.lv[i]=min(k.lv[i]+1,3)
+     pb(sk[d.o].n.." level "..k.lv[i])
+    else
+     -- both full: it pushes out
+     -- the weaker skill.
+     -- slot 2 is always newest
+     if k.sl[2] then
+      pb(sk[d.o].n.." for "..sk[k.sl[o]].n)
+      if o==1 then
+       k.sl[1],k.lv[1],k.tm[1]=k.sl[2],k.lv[2],k.tm[2]
+      end
+     else
+      pb(sk[d.o].n.."!")
+     end
+     k.sl[2],k.lv[2],k.tm[2]=d.o,1,0
+    end
+   else
+    del(drops,d) sfx(3)
+    if d.s==40 then k.hp=min(k.hp+2,k.mhp)
+    else
+     k.rage+=1
+     if k.rage>=36 then rampage() end
+    end
+   end
+  else
+   d.h=nil
+  end
+  end
+ end
+end
+
+-- thrown things, spikes, rocks
+-- (p: whose)
+function upd_objs()
+ for o in all(objs) do
+  use(o.p)
+  o.x+=o.dx o.y+=o.dy o.t-=1
+  if o.t<0 or hit(o.x,o.y,2,0,true)>0 then
+   del(objs,o)
+   hit(o.x,o.y,o.r,o.d)
+   if o.r>4 then
+    ring(o.x,o.y,o.r+4,9) boom(o.x,o.y,8)
+    shake=max(shake,3) sfx(2)
+   end
+  end
+ end
+end
+
+function boom(x,y,n)
+ for i=1,n do
+  add(fx,{x=x,y=y,dx=rnd(3)-1.5,dy=rnd(3)-2,
+   t=10+rnd(15),c=rnd(split"7,10,9,8,5")})
+ end
+end
+
+function ring(x,y,r,c)
+ add(fx,{x=x,y=y,dx=0,dy=0,t=10,r=r,c=c})
+end
+
+function upd_fx()
+ for p in all(fx) do
+  p.x+=p.dx p.y+=p.dy
+  p.dx*=.9 p.dy*=.9
+  p.t-=1
+  if p.t<0 then del(fx,p) end
+ end
+ for l in all({pops,bolts,clouds}) do
+  for p in all(l) do
+   p.t-=1
+   if p.t<0 then del(l,p) end
+  end
+ end
+ for p in all(pops) do p.y-=.5 end
+ for c in all(clouds) do
+  if tm%10==0 then use(c.p) hit(c.x,c.y,c.r,1) end
+ end
+end
+
+-- points for k
+function addscore(n,x,y)
+ n*=dm
+ -- score is kept in tens
+ -- (shown with a 0 on the end)
+ -- so it can pass 32767
+ k.sc=min(k.sc+n/10,32000)
+ if n>=10 then add(pops,{x=x,y=y,t=30,s="+"..n}) end
+end
+
+-- s2: a big message with s2
+-- underneath
+function banner(s,s2) bn,bn2,bt=s,s2,s2 and 75 or 60 end
+-- a message about k ("p2 zap!")
+function pb(s) banner((np>1 and "p"..k.n+1 .." " or "")..s) end
+
+function clock(s)
+ return s\60 ..":"..(s%60<10 and "0" or "")..s%60
+end
+
+function pts(s) return s<1 and "0" or flr(s).."0" end
+
+-->8
+-- drawing + hud
+
+function drw_play()
+ cls(3)
+ cx+=(tx-cx)*.2
+ cy+=(ty-cy)*.2
+ local sx,sy=0,0
+ if shake>0 then
+  sx,sy=rnd(shake*2)-shake,rnd(shake*2)-shake
+  shake=shake>.5 and shake*.85 or 0
+ end
+ camera(cx+sx,cy+sy)
+
+ for i=0,world-1,64 do
+  rectfill(i,0,i+15,world,5)
+  rectfill(0,i,world,i+15,5)
+ end
+ -- dust clouds (see-through)
+ fillp(0b0101101001011010.1)
+ for c in all(clouds) do circfill(c.x,c.y,c.r,10) end
+ fillp()
+
+ for d in all(drops) do
+  local y=d.y-4+sin(t()+d.x/50)*1.5
+  if d.o then
+   circfill(d.x,y,3,sk[d.o].c)
+   pset(d.x-1,y-1,7)
+  else
+   spr(d.s,d.x-4,y-4)
+  end
+ end
+ -- a row of buildings, then
+ -- the kaiju standing in front
+ -- of it, so they go behind
+ -- the rows below them
+ for j=cy\16-1,(cy+128)\16 do
+  for i=max(cx\16-1,0),(cx+128)\16 do
+   local b=gr[i+j*24]
+   if b then drw_bld(b) end
+  end
+  for p in all(al) do
+   if (p.y-11)\16==j then use(p) drw_k() end
+  end
+ end
+
+ for e in all(ens) do drw_e(e) end
+ for o in all(objs) do
+  if o.s then spr(o.s,o.x-o.w*4,o.y-o.w*4-6,o.w,o.w)
+  elseif o.r>4 then circfill(o.x,o.y-4,3,o.c or 4) circ(o.x,o.y-4,3,5)
+  else line(o.x,o.y,o.x-o.dx,o.y-o.dy,7) end
+ end
+ for s in all(shots) do
+  if s.b then
+   circ(s.x,s.y,12*(1-s.t/30),8)
+  elseif s.c then
+   circfill(s.x,s.y,2,s.c) pset(s.x,s.y,7)
+  else
+   spr(s.s,s.x-4,s.y-4,1,1,s.dx<0)
+  end
+ end
+
+ for p in all(al) do
+   use(p)
+   if k.bl>0 then
+    local mx,my=k.x+k.face*7,k.y-11
+    for i=0,k.bl,3 do
+     circfill(mx+k.fx*i,my+k.fy*i,1+rnd(k.rg>0 and 4 or 2),k.rg>0 and 8+(i/3+t()*20)%7 or pk.bc)
+    end
+    line(mx,my,mx+k.fx*k.bl,my+k.fy*k.bl,7)
+   end
+   for i=1,2 do
+    local id=k.sl[i]
+    -- spores
+    if id and sk[id].a=="orbit" then
+     for j=0,k.lv[i] do
+      local x,y=orbit(j,k.lv[i]+1)
+      circfill(x,y,2,14) pset(x,y,7)
+     end
+    end
+   end
+ end
+ for b in all(bolts) do
+  local x,y=(b.p.x+b.x)/2+rnd(8)-4,(b.p.y+b.y)/2-6
+  line(b.p.x,b.p.y-12,x,y,12) line(b.x,b.y,7)
+ end
+ for p in all(fx) do
+  if p.r then circ(p.x,p.y,p.r*(1-p.t/10),p.c)
+  else circfill(p.x,p.y,p.t/6,p.c) end
+ end
+ for p in all(pops) do
+  oprint(p.s,p.x-#p.s*2,p.y,10)
+ end
+
+ camera()
+ drw_hud()
+ if st=="over" then drw_over() end
+ if flash>0 then flash-=1 rectfill(0,0,127,127,7) end
+end
+
+function drw_bld(b)
+ if b.dead then
+  if b.k>0 then spr(12,b.x,b.y,2,2) end
+  return
+ end
+ if b.fl>0 then b.fl-=1 white() end
+ if b.k==0 then spr(37,b.x+4,b.y+4)
+ else spr(bspr[b.k+1],b.x,b.y,2,2) end
+ pal()
+end
+
+-- color swaps as "old,new,..."
+function tint(s)
+ local p=split(s)
+ for i=1,#p,2 do pal(p[i],p[i+1]) end
+end
+stone="11,6,3,5,10,6,9,5,4,5,6,7"
+gold="11,10,3,9,10,7,9,10,4,10,6,7"
+purple="11,14,3,2,10,14,9,2,4,14,6,13"
+
+function drw_k()
+ -- a ring in your color under
+ -- your feet, your number over
+ -- your head
+ ovalfill(k.x-6,k.y-2,k.x+6,k.y+2,1)
+ oval(k.x-7,k.y-3,k.x+7,k.y+3,k.c)
+ if k.inv%4<2 then
+  if k.tint then tint(stone) end
+  local w,h=16,16
+  if k.rg>0 then
+   -- rage mode: big, glowing,
+   -- every color of the rainbow
+   w,h=24,24
+   if k.rg>60 or t()*6%2<1 then rainbow() end
+  elseif k.safe then tint(gold) end
+  -- squash landing, stretch
+  -- going up
+  if k.sq>0 then k.sq-=1 w+=6 h-=5
+  elseif k.fly>0 then w-=2 h+=3 end
+  big(pk.sp+(k.atk and 4 or flr(k.fr)%2*2),k.x-w/2,k.y-h-k.z,w,h,k.face<0)
+  pal()
+ end
+ if np>1 then oprint(k.n+1,k.x-1,k.y-23-k.z,k.c) end
+ if k.held then
+  spr(k.held,k.x-k.hw*4,k.y-18-k.hw*8-k.z,k.hw,k.hw)
+ end
+ if k.shell>0 then circ(k.x,k.y-8-k.z,11,12) end
+ -- the bar for standing on
+ -- an orb to swap it in
+ if k.ho then
+  line(k.x+10,k.y,k.x+10,k.y-15,0)
+  local s=sk[k.ho.o]
+  line(k.x+10,k.y,k.x+10,k.y-k.ho.h/2,s.c)
+  oprint(s.n.."?",k.x+13,k.y-12,s.c)
+ end
+ -- breath left, under the feet
+ if k.en<60 then
+  line(k.x-6,k.y+4,k.x-6+12*k.en/60,k.y+4,pk.bc)
+ end
+ -- z charging back
+ if k.zc<1 then
+  line(k.x-6,k.y+6,k.x-6+12*k.zc,k.y+6,11)
+ end
+end
+
+function drw_e(e)
+ local w=e.w
+ if e.fl>0 then white()
+ elseif e.k==6 then tint(purple) end
+ if e.k==6 then
+  local h=w*4
+  big(roster[e.rk].sp+flr(t()*4)%2*2,e.x-h,e.y-h,h*2,h*2,e.face<0)
+  pal()
+  line(e.x-h,e.y-h-3,e.x+h,e.y-h-3,2)
+  line(e.x-h,e.y-h-3,e.x-h+2*h*e.hp/e.mhp,e.y-h-3,8)
+ else
+  local s=et[e.k][1]
+  if e.k==2 then s+=t()*10%2
+  elseif e.k==5 then s+=flr(t()*4)%2*2 end
+  local fl=e.x>(e.tg or k).x
+  if e.k==4 then fl=e.dx<0 end
+  spr(s,e.x-w*4,e.y-w*4,w,w,fl)
+  pal()
+ end
+ if e.dz>0 then print("?",e.x-1,e.y-w*4-7,10) end
+end
+
+-- the kaiju colors cycle
+-- through 8-14 (red to pink)
+function rainbow()
+ for i,p in pairs(split"11,3,10,9,4,6") do
+  pal(p,8+(t()*20+i)%7)
+ end
+end
+
+-- a 16x16 drawing (sprite f)
+-- at any size
+function big(f,x,y,w,h,fl)
+ sspr(f%16*8,f\16*8,16,16,x,y,w,h,fl)
+end
+
+function white()
+ for i=1,15 do pal(i,7) end
+end
+
+function oprint(s,x,y,c)
+ for i=-1,1 do
+  for j=-1,1 do print(s,x+i,y+j,0) end
+ end
+ print(s,x,y,c)
+end
+
+-- a marker on the edge of the
+-- screen pointing at a spot
+-- that's off screen
+function edge(wx,wy,c,s,o)
+ local rx,ry=wx-cx,wy-cy
+ if rx<0 or rx>127 or ry<8 or ry>108 then
+  local a=atan2(rx-64,ry-64)
+  local x,y=64+cos(a)*56,64+sin(a)*42
+  circfill(x,y,4,c)
+  print(s,x-o,y-2,7)
+ end
+end
+
+function drw_hud()
+ rectfill(0,0,127,7,0)
+ if gm==1 then
+  -- how wrecked the city is,
+  -- and the time left
+  print(flr(nd/goal*100).."% of the city",2,1,8)
+  rectfill(0,8,127*min(nd/goal,1),9,8)
+  print(clock(180-secs),108,1,7)
+ else
+  print("wave "..wave.." of 8",2,1,9)
+  print(clock(secs),108,1,6)
+ end
+ if rival and rival.boss then
+  rect(2,11,125,15,2)
+  rectfill(3,12,3+121*rival.hp/rival.mhp,14,8)
+ end
+
+ -- arrow to the rival when
+ -- it's off the screen
+ if rival then
+  edge(rival.x,rival.y,8,"!",1)
+ end
+
+ -- each player: number and
+ -- buildings (wreck) or points,
+ -- hp, rage, the 2 skills
+ rectfill(0,110,127,127,0)
+ for i,p in pairs(ks) do
+  local x=i*32-32
+  print("p"..p.n+1,x+1,111,p.c)
+  print(gm==1 and p.nd.."\138" or pts(p.sc),x+11,111,7)
+  if p.dn then
+   print(gm==1 and "back "..ceil(p.rt/30) or "down",x+1,118,5)
+  else
+   line(x+1,118,x+30,118,2)
+   line(x+1,118,x+1+29*p.hp/p.mhp,118,8)
+   line(x+1,120,x+1+29*(p.rg>0 and p.rg/300 or p.rage/36),120,p.rg>0 and 8+t()*15%7 or 9)
+   for j=1,2 do
+    local id=p.sl[j]
+    if id then
+     circfill(x+j*14-11,124,2,sk[id].c)
+     print(p.lv[j],x+j*14-7,122,p.lv[j]==3 and 10 or 7)
+    end
+   end
+  end
+ end
+
+ if bt>0 then
+  bt-=1
+  if bn2 then
+   oprint("\^w\^t"..bn,64-#bn*4,24,10)
+   oprint(bn2,64-#bn2*2,40,7)
+  else
+   oprint(bn,64-#bn*2,30,10)
+  end
+ end
+end
+
+function drw_over()
+ rectfill(12,30,115,100,0)
+ rect(12,30,115,100,won and 11 or 8)
+ local m=gm==2 and (won and "boss beaten!" or "rampage over") or np>1 and "player "..wn.n+1 .." wins!" or nd>=goal and "city wrecked!" or "time's up!"
+ oprint(m,64-#m*2,34,won and 11 or 8)
+ -- everyone's buildings and
+ -- points
+ for i,p in pairs(ks) do
+  local y=36+i*8
+  print("p"..p.n+1 .." "..p.pk.n,16,y,p.c)
+  print(p.nd.."\138 "..pts(p.sc),64,y,7)
+ end
+ print((gm==2 and "team " or "top ")..pts(score),16,80,7)
+ print("best "..pts(max(best,score)),64,80,6)
+ if ot>45 then print("z: menu",50,92,6) end
+end
+
+function drw_title()
+ cls(1)
+ oprint("kaiju rage",44,3,8)
+ -- one box per controller
+ for i=0,3 do
+  local x,j,c=i*32+1,js[i],pc[i+1]
+  rect(x,11,x+29,60,j and c or 5)
+  print("p"..i+1,x+2,13,c)
+  if j then
+   local r=roster[j]
+   big(r.sp+flr(t()*4)%2*2,x+3,20,24,24)
+   print(r.n,x+15-#r.n*2,46,7)
+   print(r.z,x+15-#r.z*2,53,6)
+  else
+   print("x:",x+10,28,5)
+   print("join",x+7,35,5)
+  end
+ end
+ for m=1,3 do
+  local s=split"most city wrecked,most wrecked + friendly fire,survive 8 waves together"[m]
+  print(s,10,60+m*8,m==md and 10 or 6)
+  if m==md then print("\143",2,60+m*8,10) end
+ end
+ print("x hold: breath  z: move",4,96,6)
+ print("z+x: grab  p2-4: x joins",4,103,6)
+ print("best "..pts(dget(md)),4,112,9)
+ oprint("z: go!",100,112,10)
+end

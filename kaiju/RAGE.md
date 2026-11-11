@@ -290,3 +290,66 @@ fast skills level up, `kaiju/rage_coins.lua` (add `580`) how many coins and rage
 cart is near the token limit, so a test's first line can say
 `-- stub: name name` to empty functions it doesn't need (only in the test
 copy, never in the cart).
+
+---
+
+## 4 players (rage4.p8)
+
+Its own cart, like Blessed! 4, so the 1-player game keeps its room:
+
+```
+cd games
+cd kaiju
+load rage4
+run
+```
+
+![kaiju rage 4](shots/rage4_sheet.png)
+
+**Joining:** player 1 is always in. Players 2–4 press **X** on their own
+controller to join. Everyone picks a kaiju with **left / right** (two people
+can pick the same one; your color ring and number tell you apart). Player 1
+picks the mode with **up / down** and starts with Z or X.
+
+| mode | goal | when it ends |
+|---|---|---|
+| **most city wrecked** | wreck the most buildings (points break a tie). The army comes too | after 3 minutes, or when half the city is down |
+| **most wrecked + friendly fire** | the same, but your breath, stomps, throws and skills hurt the others too (half damage). A knockout pays 300 | the same |
+| **survive 8 waves together** | no friendly fire; beat the boss in wave 8 | the boss is beaten, or everyone is down |
+
+- **Going down:** in the wrecking modes you're back in 3 seconds with full hp.
+  In survive, you're out until the next wave, then back with half hp.
+- **One screen:** the camera follows the middle of the group, and nobody can
+  walk off the screen, so stick together.
+- **Skill orbs** belong to a kaiju: Gora's orbs are only for Goras. Each new
+  wave drops one near every player. Coins and hearts are for anyone.
+- **Bottom bar**, one column per player: buildings wrecked (or points in
+  survive), hp (red), rage (orange) and the two skills with their levels.
+  Skill names show in the message when you get or level one ("p2 zap level 2").
+- Enemies go after the nearest kaiju. The rival and the boss have more hp
+  with more players (×2.5 for 4).
+- Best score per mode: the winner's points (wrecking) or the team's (survive).
+
+**Left out to fit** (the cart is at 8,165 of 8,192 tokens): the rival doesn't
+run away to heal, helicopters don't circle, stomps don't freeze the screen
+(with 4 kaiju the freezes piled up), no marker for the nearest building,
+lightning is one zig-zag, and no big "rage mode!" letters. The army tops out
+at 50 at once (58 in the 1-player game) so four kaiju breathing at once stay
+smooth.
+
+**Same drawings and sounds as rage.p8.** The code is in `kaiju/rage4.lua`;
+after you redraw art or change sounds in rage.p8, rebuild the 4-player cart
+so it gets them:
+
+```bash
+python3 tools/cart4.py kaiju/rage4.lua kaiju/rage.p8 kaiju/rage4.p8
+```
+
+(Don't edit rage4.p8's code in PICO-8: it's remade from rage4.lua.)
+
+**Testing:** `kaiju/rage4_smoke.lua` (add `240`) plays all three modes with
+four players mashing buttons, friendly-fire knockouts, coming back, the boss
+and everyone down; `kaiju/rage4_shots.lua` retakes the screenshots;
+`kaiju/rage4_cpu.lua` measures the busiest frames (four kaiju breathing
+non-stop, level 3 skills, a full army: about half of PICO-8's time on
+average, 92% at worst).
