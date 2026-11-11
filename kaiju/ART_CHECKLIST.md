@@ -5,6 +5,14 @@ what to keep in mind. Draw over the stand-ins in PICO-8's sprite editor
 (the number of the selected sprite shows at the bottom); the game picks them
 up as soon as you save (Ctrl+S) and run (Ctrl+R).
 
+**One set of art for both carts.** Draw in `rage.p8` only. The 4-player cart
+(`rage4.p8`) uses the same drawings and sounds; when you're done drawing, copy
+them over with:
+
+```
+python3 tools/cart4.py kaiju/rage4.lua kaiju/rage.p8 kaiju/rage4.p8
+```
+
 A 16 × 16 drawing uses a 2 × 2 block of sprites starting at its number (so
 sprite 0 also covers 1, 16 and 17).
 
